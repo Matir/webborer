@@ -14,3 +14,13 @@ GoBuster is a directory-enumeration tool written in Go and targeting CLI usage.
 ### Contributing ###
 
 Please see the CONTRIBUTING file in this directory.
+
+### Copyright ###
+Copyright 2015 Google Inc.
+
+GoBuster is not an official Google product (experimental or otherwise), it is
+just code that happens to be owned by Google.
+
+### Contact ###
+For questions about GoBuster, contact David Tomaschik
+<<davidtomaschik@google.com>>
