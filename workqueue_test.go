@@ -1,0 +1,37 @@
+package main
+
+import (
+	"fmt"
+	"net/url"
+	"testing"
+)
+
+func TestWorkqueueBasic(t *testing.T) {
+	filter := func(_ *url.URL) bool { return true }
+
+	queue := NewWorkQueue(5, filter)
+	queue.RunInBackground()
+	fmt.Println("Adding tasks...")
+	for i := 0; i < 20; i++ {
+		s := fmt.Sprintf("%d", i)
+		u := &url.URL{Path: s}
+		queue.AddURLs(u)
+	}
+	queue.InputFinished()
+	fmt.Println("Getting tasks...")
+	out := queue.GetWorkChan()
+	for i := 0; i < 20; i++ {
+		o, ok := <-out
+		s := fmt.Sprintf("%d", i)
+		if !ok {
+			t.Errorf("Was expecting %s, got error!", s)
+			break
+		}
+		if o.Path != s {
+			t.Errorf("Out of order responses, got %s, expected %s", o.Path, s)
+		}
+		queue.ctr.Done(1)
+	}
+	fmt.Println("Waiting...")
+	queue.WaitPipe()
+}
