@@ -1,11 +1,11 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/Matir/gobuster/logging"
 	"net/http"
 	"net/url"
 	"os"
@@ -66,7 +67,7 @@ func EnableStackTraces() {
 		for {
 			<-sigs
 			runtime.Stack(buf, true)
-			Logf(LogDebug, "=== received SIGQUIT ===\n*** goroutine dump...\n%s\n*** end\n", buf)
+			logging.Logf(logging.LogDebug, "=== received SIGQUIT ===\n*** goroutine dump...\n%s\n*** end\n", buf)
 		}
 	}()
 }
@@ -88,7 +89,7 @@ func DedupeStrings(s []string) []string {
 // Only considers the host and scheme if they are non-empty in the parent
 // Identical paths are considered subpaths of each other
 func URLIsSubpath(parent, child *url.URL) bool {
-	Logf(LogDebug, "Subpath check: Parent: %s, child %s.", parent.String(), child.String())
+	logging.Logf(logging.LogDebug, "Subpath check: Parent: %s, child %s.", parent.String(), child.String())
 	if parent.Scheme != "" && child.Scheme != parent.Scheme {
 		return false
 	}
@@ -109,7 +110,7 @@ func URLIsSubpath(parent, child *url.URL) bool {
 		return true
 	}
 	if !strings.HasPrefix(cPath, pPath) {
-		Logf(LogDebug, "Reject for differing paths: %s, %s", cPath, pPath)
+		logging.Logf(logging.LogDebug, "Reject for differing paths: %s, %s", cPath, pPath)
 		return false
 	}
 	return cPath[len(pPath)] == slash

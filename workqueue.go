@@ -1,11 +1,11 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/Matir/gobuster/logging"
 	"net/url"
 	"sync"
 )
@@ -153,7 +154,7 @@ func (q *WorkQueue) GetDoneFunc() QueueDoneFunc {
 }
 
 func (q *WorkQueue) reject(u *url.URL) {
-	Logf(LogDebug, "Workqueue rejecting %s", u.String())
+	logging.Logf(logging.LogDebug, "Workqueue rejecting %s", u.String())
 	q.ctr.Done(1)
 }
 
@@ -216,7 +217,7 @@ func (ctr *WorkCounter) Done(done int64) {
 	}
 	if ctr.done == ctr.todo {
 		// Mark done
-		Logf(LogInfo, "Work counter thinks we're done.")
+		logging.Logf(logging.LogInfo, "Work counter thinks we're done.")
 		ctr.L.Lock()
 		defer ctr.L.Unlock()
 		ctr.Broadcast()
@@ -224,5 +225,5 @@ func (ctr *WorkCounter) Done(done int64) {
 }
 
 func (ctr *WorkCounter) Stats() {
-	Logf(LogDebug, "WorkCounter: %d/%d", ctr.done, ctr.todo)
+	logging.Logf(logging.LogDebug, "WorkCounter: %d/%d", ctr.done, ctr.todo)
 }

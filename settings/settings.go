@@ -1,23 +1,24 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package settings
 
 import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/Matir/gobuster/logging"
 	"os"
 	"runtime"
 	"strings"
@@ -70,6 +71,9 @@ type ScanSettings struct {
 	flagsSet bool
 }
 
+var DefaultUserAgent = "GoBuster 0.01"
+var outputFormats []string
+
 // StringSliceFlag is a flag.Value that takes a comma-separated string and turns
 // it into a slice of strings.
 type StringSliceFlag struct {
@@ -114,6 +118,7 @@ func NewScanSettings() *ScanSettings {
 		Mangle:     true,
 		QueueSize:  1024,
 		Timeout:    30 * time.Second,
+		LogLevel:   "WARNING",
 	}
 	settings.InitFlags()
 	return settings
@@ -155,11 +160,11 @@ func (settings *ScanSettings) InitFlags() {
 	flag.Var(proxyValue, "proxy", "Proxy or `proxies` to use.")
 	timeoutValue := DurationFlag{&settings.Timeout}
 	flag.Var(timeoutValue, "timeout", "Network connection timeout (`duration`).")
-	formatHelp := fmt.Sprintf("Output `format`.  Options: [%s]", strings.Join(OutputFormats, ", "))
-	flag.StringVar(&settings.OutputFormat, "format", OutputFormats[0], formatHelp)
+	formatHelp := fmt.Sprintf("Output `format`.  Options: [%s]", strings.Join(outputFormats, ", "))
+	flag.StringVar(&settings.OutputFormat, "format", outputFormats[0], formatHelp)
 	flag.StringVar(&settings.OutputPath, "outfile", "", "Output `file`, defaults to stdout.")
-	loglevelHelp := fmt.Sprintf("Log `level`.  Options: [%s]", strings.Join(logLevelStrings[:], ", "))
-	flag.StringVar(&settings.LogLevel, "loglevel", logLevelStrings[logLevel], loglevelHelp)
+	loglevelHelp := fmt.Sprintf("Log `level`.  Options: [%s]", strings.Join(logging.LogLevelStrings[:], ", "))
+	flag.StringVar(&settings.LogLevel, "loglevel", settings.LogLevel, loglevelHelp)
 	flag.StringVar(&settings.UserAgent, "user-agent", DefaultUserAgent, "`User-Agent` for requests")
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
 
@@ -217,4 +222,9 @@ func (settings *ScanSettings) String() string {
 	})
 
 	return strings.Join(flags, " ")
+}
+
+// Init output formats
+func setOutputFormats(formats []string) {
+	outputFormats = formats
 }

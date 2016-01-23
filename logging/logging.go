@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package logging
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ const (
 	LogFatal
 )
 
-var logLevelStrings = [...]string{
+var LogLevelStrings = [...]string{
 	"DEBUG",
 	"INFO",
 	"WARNING",
@@ -40,16 +40,16 @@ var logLevelStrings = [...]string{
 var logLevel = LogWarning
 var defaultLogger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lshortfile)
 
-func ResetLog(settings *ScanSettings) {
-	if len(settings.LogfilePath) > 0 {
-		if fp, err := os.Create(settings.LogfilePath); err == nil {
+func ResetLog(logfilePath, logLevel string) {
+	if len(logfilePath) > 0 {
+		if fp, err := os.Create(logfilePath); err == nil {
 			defaultLogger = log.New(fp, "", log.Ldate|log.Ltime|log.Lshortfile)
 		} else {
-			Logf(LogError, "Unable to open logfile %s.", settings.LogfilePath)
+			Logf(LogError, "Unable to open logfile %s.", logfilePath)
 		}
 	}
-	if len(settings.LogLevel) > 0 {
-		SetLogLevel(settings.LogLevel)
+	if len(logLevel) > 0 {
+		SetLogLevel(logLevel)
 	}
 }
 
@@ -58,13 +58,13 @@ func Logf(level int, format string, args ...interface{}) {
 		return
 	}
 	msg := fmt.Sprintf(format, args...)
-	msg = fmt.Sprintf("[%s] %s", logLevelStrings[level], msg)
+	msg = fmt.Sprintf("[%s] %s", LogLevelStrings[level], msg)
 	defaultLogger.Output(2, msg)
 }
 
 func SetLogLevel(level string) {
 	level = strings.ToLower(level)
-	for i, ll := range logLevelStrings {
+	for i, ll := range LogLevelStrings {
 		if strings.ToLower(ll) == level {
 			logLevel = i
 			return

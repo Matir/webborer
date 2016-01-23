@@ -1,11 +1,11 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/Matir/gobuster/logging"
+	ss "github.com/Matir/gobuster/settings"
 	"golang.org/x/net/html"
 	"io"
 	"net/http"
@@ -48,7 +50,7 @@ type Worker struct {
 	// Channel for scan results
 	results chan<- Result
 	// Settings
-	settings *ScanSettings
+	settings *ss.ScanSettings
 	// HTML worker to parse page
 	pageWorker PageWorker
 	// Channel to trigger stopping
@@ -63,7 +65,7 @@ type HTMLWorker struct {
 }
 
 // Construct a worker with given settings.
-func NewWorker(settings *ScanSettings,
+func NewWorker(settings *ss.ScanSettings,
 	factory ClientFactory,
 	src <-chan *url.URL,
 	adder QueueAddFunc,
@@ -116,7 +118,7 @@ func (w *Worker) Stop() {
 }
 
 func (w *Worker) HandleURL(task *url.URL) {
-	Logf(LogDebug, "Trying Raw URL (unmangled): %s", task.String())
+	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
 	w.TryURL(task)
 	if !URLIsDir(task) {
 		w.TryMangleURL(task)
@@ -150,7 +152,7 @@ func (w *Worker) TryMangleURL(task *url.URL) {
 }
 
 func (w *Worker) TryURL(task *url.URL) {
-	Logf(LogInfo, "Trying: %s", task.String())
+	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
 	w.redir = nil
 	req := w.MakeRequest(task)
 	if resp, err := w.client.Do(req); err != nil && w.redir == nil {
@@ -163,7 +165,7 @@ func (w *Worker) TryURL(task *url.URL) {
 		defer resp.Body.Close()
 		// Do we keep going?
 		if URLIsDir(task) && KeepSpidering(resp.StatusCode) {
-			Logf(LogDebug, "Referring %s back for spidering.", task.String())
+			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
 			w.adder(task)
 		}
 		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
@@ -206,7 +208,7 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 	for _, l := range links {
 		u, err := url.Parse(l)
 		if err != nil {
-			Logf(LogInfo, "Error parsing URL (%s): %s", l, err.Error())
+			logging.Logf(logging.LogInfo, "Error parsing URL (%s): %s", l, err.Error())
 			continue
 		}
 		foundURLs = append(foundURLs, URL.ResolveReference(u))
@@ -225,7 +227,7 @@ func (*HTMLWorker) Eligible(resp *http.Response) bool {
 func (*HTMLWorker) GetLinks(body io.Reader) []string {
 	tree, err := html.Parse(body)
 	if err != nil {
-		Logf(LogInfo, "Unable to parse HTML document: %s", err.Error())
+		logging.Logf(logging.LogInfo, "Unable to parse HTML document: %s", err.Error())
 		return nil
 	}
 	links := make([]string, 0)
@@ -251,7 +253,7 @@ func (*HTMLWorker) GetLinks(body io.Reader) []string {
 }
 
 // Starts a batch of workers based on the relevant settings.
-func StartWorkers(settings *ScanSettings,
+func StartWorkers(settings *ss.ScanSettings,
 	factory ClientFactory,
 	src <-chan *url.URL,
 	adder QueueAddFunc,

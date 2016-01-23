@@ -1,11 +1,11 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/Matir/gobuster/logging"
 	"h12.me/socks"
 	"math/rand"
 	"net/http"
@@ -28,8 +29,6 @@ var proxyTypeMap = map[string]int{
 	"socks4a": socks.SOCKS4A,
 	"socks5":  socks.SOCKS5,
 }
-
-var DefaultUserAgent = "GoBuster 0.01"
 
 // A ClientFactory allows constructing HTTP Clients based on various Dialers or
 // Transports.
@@ -50,15 +49,15 @@ func NewProxyClientFactory(proxies []string, timeout time.Duration) *ProxyClient
 	for _, proxy := range proxies {
 		u, err := url.Parse(proxy)
 		if err != nil {
-			Logf(LogWarning, "Unable to parse proxy: %s", proxy)
+			logging.Logf(logging.LogWarning, "Unable to parse proxy: %s", proxy)
 			continue
 		}
 		if _, ok := proxyTypeMap[u.Scheme]; !ok {
-			Logf(LogWarning, "Invalid proxy protocol: %s", u.Scheme)
+			logging.Logf(logging.LogWarning, "Invalid proxy protocol: %s", u.Scheme)
 			continue
 		}
 		if u.Host == "" {
-			Logf(LogWarning, "Missing host for proxy: %s", proxy)
+			logging.Logf(logging.LogWarning, "Missing host for proxy: %s", proxy)
 			continue
 		}
 		factory.proxyURLs = append(factory.proxyURLs, u)

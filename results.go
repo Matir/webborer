@@ -1,11 +1,11 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,8 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/Matir/gobuster/logging"
+	ss "github.com/Matir/gobuster/settings"
 	"html/template"
 	"io"
 	"net/url"
@@ -80,9 +82,9 @@ type HTMLResultsManager struct {
 // Available output formats as strings.
 var OutputFormats = []string{"text", "csv", "html"}
 
-// Construct a ResultsManager for the given settings in the ScanSettings.
+// Construct a ResultsManager for the given settings in the ss.ScanSettings.
 // Returns an object satisfying the ResultsManager interface or an error.
-func GetResultsManager(settings *ScanSettings) (ResultsManager, error) {
+func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 	var writer io.Writer
 	var fp *os.File
 	var err error
@@ -207,7 +209,7 @@ func (rm *HTMLResultsManager) writeHeader() {
 	header := `{{define "HEAD"}}<html><head><title>gobuster: {{.BaseURL}}</title></head><h2>Results for <a href="{{.BaseURL}}">{{.BaseURL}}</a></h2><table><tr><th>Code</th><th>URL</th><th>Size</th></tr>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(header)
 	if err != nil {
-		Logf(LogWarning, "Error parsing a template: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
 	}
 	data := struct {
 		BaseURL string
@@ -216,7 +218,7 @@ func (rm *HTMLResultsManager) writeHeader() {
 	}
 	err = t.ExecuteTemplate(rm.writer, "HEAD", data)
 	if err != nil {
-		Logf(LogWarning, "Error writing template output: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
 	}
 }
 
@@ -224,11 +226,11 @@ func (rm *HTMLResultsManager) writeFooter() {
 	footer := `{{define "FOOTER"}}</table></html>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(footer)
 	if err != nil {
-		Logf(LogWarning, "Error parsing a template: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
 	}
 	err = t.ExecuteTemplate(rm.writer, "FOOTER", nil)
 	if err != nil {
-		Logf(LogWarning, "Error writing template output: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
 	}
 }
 
@@ -237,10 +239,10 @@ func (rm *HTMLResultsManager) writeResult(res *Result) {
 	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{.Length}}</td></tr>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(tmpl)
 	if err != nil {
-		Logf(LogWarning, "Error parsing a template: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
 	}
 	err = t.ExecuteTemplate(rm.writer, "ROW", res)
 	if err != nil {
-		Logf(LogWarning, "Error writing template output: %s", err.Error())
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
 	}
 }
