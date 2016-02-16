@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package worker
 
 import (
 	"fmt"
+	"github.com/Matir/gobuster/client"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/workqueue"
 	"golang.org/x/net/html"
 	"io"
@@ -68,7 +70,7 @@ type HTMLWorker struct {
 
 // Construct a worker with given settings.
 func NewWorker(settings *ss.ScanSettings,
-	factory ClientFactory,
+	factory client.ClientFactory,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
@@ -122,7 +124,7 @@ func (w *Worker) Stop() {
 func (w *Worker) HandleURL(task *url.URL) {
 	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
 	w.TryURL(task)
-	if !URLIsDir(task) {
+	if !util.URLIsDir(task) {
 		w.TryMangleURL(task)
 		for _, ext := range w.settings.Extensions {
 			task := *task
@@ -166,7 +168,7 @@ func (w *Worker) TryURL(task *url.URL) {
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
-		if URLIsDir(task) && KeepSpidering(resp.StatusCode) {
+		if util.URLIsDir(task) && util.KeepSpidering(resp.StatusCode) {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
 			w.adder(task)
 		}
@@ -251,12 +253,12 @@ func (*HTMLWorker) GetLinks(body io.Reader) []string {
 		}
 	}
 	handleNode(tree)
-	return DedupeStrings(links)
+	return util.DedupeStrings(links)
 }
 
 // Starts a batch of workers based on the relevant settings.
 func StartWorkers(settings *ss.ScanSettings,
-	factory ClientFactory,
+	factory client.ClientFactory,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,

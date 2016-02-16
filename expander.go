@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/workqueue"
 	"net/url"
 	"strings"
@@ -63,7 +64,7 @@ func (E *Expander) Expand(in <-chan *url.URL) <-chan *url.URL {
 
 func ExtendURL(u *url.URL, tail string) *url.URL {
 	extended := *u
-	if !URLIsDir(u) {
+	if !util.URLIsDir(u) {
 		extended.Path += "/" + tail
 	} else {
 		extended.Path += tail

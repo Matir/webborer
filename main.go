@@ -15,10 +15,13 @@
 package main
 
 import (
+	"github.com/Matir/gobuster/client"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/wordlist"
+	"github.com/Matir/gobuster/worker"
 	"github.com/Matir/gobuster/workqueue"
 	"net/url"
 	"runtime"
@@ -27,7 +30,7 @@ import (
 // This is the main runner for gobuster.
 // TODO: separate the actual scanning from all of the setup steps
 func main() {
-	EnableStackTraces()
+	util.EnableStackTraces()
 
 	// Load scan settings
 	settings, err := ss.GetScanSettings()
@@ -56,7 +59,7 @@ func main() {
 
 	// Build an HTTP Client Factory
 	logging.Logf(logging.LogDebug, "Creating Client Factory...")
-	clientFactory := NewProxyClientFactory(settings.Proxies, settings.Timeout)
+	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout)
 
 	// Starting point
 	scope, err := url.Parse(settings.BaseURL)
@@ -89,10 +92,10 @@ func main() {
 	}
 
 	logging.Logf(logging.LogDebug, "Starting %d workers...", settings.Workers)
-	workers := StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
+	workers := worker.StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
 	if settings.ParseHTML {
-		htmlWorker := NewHTMLWorker(queue.GetAddFunc())
-		SetPageWorkers(workers, htmlWorker)
+		htmlWorker := worker.NewHTMLWorker(queue.GetAddFunc())
+		worker.SetPageWorkers(workers, htmlWorker)
 	}
 
 	logging.Logf(logging.LogDebug, "Starting results manager...")
@@ -118,6 +121,6 @@ func main() {
 // Build a function to check if the target URL is in scope.
 func MakeScopeFunc(scope *url.URL) func(*url.URL) bool {
 	return func(target *url.URL) bool {
-		return URLIsSubpath(scope, target)
+		return util.URLIsSubpath(scope, target)
 	}
 }

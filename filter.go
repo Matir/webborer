@@ -17,6 +17,7 @@ package main
 import (
 	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/workqueue"
 	"net/url"
 )
@@ -58,7 +59,7 @@ func (f *WorkFilter) Filter(src <-chan *url.URL) <-chan *url.URL {
 			}
 			f.done[taskURL] = true
 			for _, exclusion := range f.exclusions {
-				if URLIsSubpath(exclusion, task) {
+				if util.URLIsSubpath(exclusion, task) {
 					f.reject(task)
 					continue taskLoop
 				}
