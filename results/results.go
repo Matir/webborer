@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package results
 
 import (
 	"encoding/csv"
@@ -21,6 +21,7 @@ import (
 	ss "github.com/Matir/gobuster/settings"
 	"html/template"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 )
@@ -81,6 +82,19 @@ type HTMLResultsManager struct {
 
 // Available output formats as strings.
 var OutputFormats = []string{"text", "csv", "html"}
+
+func init() {
+	ss.SetOutputFormats(OutputFormats)
+}
+
+// Returns true if this is a "useful" result
+func FoundSomething(code int) bool {
+	return (code != http.StatusNotFound &&
+		code != http.StatusGone &&
+		code != http.StatusBadGateway &&
+		code != http.StatusServiceUnavailable &&
+		code != http.StatusGatewayTimeout)
+}
 
 // Construct a ResultsManager for the given settings in the ss.ScanSettings.
 // Returns an object satisfying the ResultsManager interface or an error.

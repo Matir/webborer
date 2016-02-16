@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/gobuster/results"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/wordlist"
 	"github.com/Matir/gobuster/workqueue"
@@ -80,22 +81,22 @@ func main() {
 	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
-	results := make(chan Result, settings.QueueSize)
-	resultsManager, err := GetResultsManager(settings)
+	rchan := make(chan results.Result, settings.QueueSize)
+	resultsManager, err := results.GetResultsManager(settings)
 	if err != nil {
 		logging.Logf(logging.LogFatal, "Unable to start results manager: %s", err.Error())
 		return
 	}
 
 	logging.Logf(logging.LogDebug, "Starting %d workers...", settings.Workers)
-	workers := StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), results)
+	workers := StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
 	if settings.ParseHTML {
 		htmlWorker := NewHTMLWorker(queue.GetAddFunc())
 		SetPageWorkers(workers, htmlWorker)
 	}
 
 	logging.Logf(logging.LogDebug, "Starting results manager...")
-	resultsManager.Run(results)
+	resultsManager.Run(rchan)
 
 	// Kick things off with the seed URL
 	logging.Logf(logging.LogDebug, "Adding starting URL: %s", scope)
@@ -108,7 +109,7 @@ func main() {
 
 	// Cleanup
 	queue.InputFinished()
-	close(results)
+	close(rchan)
 
 	resultsManager.Wait()
 	logging.Logf(logging.LogDebug, "Done!")

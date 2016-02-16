@@ -43,15 +43,6 @@ func KeepSpidering(code int) bool {
 		code == http.StatusForbidden)
 }
 
-// Returns true if this is a "useful" result
-func FoundSomething(code int) bool {
-	return (code != http.StatusNotFound &&
-		code != http.StatusGone &&
-		code != http.StatusBadGateway &&
-		code != http.StatusServiceUnavailable &&
-		code != http.StatusGatewayTimeout)
-}
-
 // Find the group (200, 300, 400, 500, ...) this status code belongs to
 func StatusCodeGroup(code int) int {
 	return (code / 100) * 100

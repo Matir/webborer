@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/gobuster/results"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/workqueue"
 	"golang.org/x/net/html"
@@ -49,7 +50,7 @@ type Worker struct {
 	// Function to mark work done
 	done workqueue.QueueDoneFunc
 	// Channel for scan results
-	results chan<- Result
+	rchan chan<- results.Result
 	// Settings
 	settings *ss.ScanSettings
 	// HTML worker to parse page
@@ -71,14 +72,14 @@ func NewWorker(settings *ss.ScanSettings,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	results chan<- Result) *Worker {
+	rchan chan<- results.Result) *Worker {
 	w := &Worker{
 		client:   factory.Get(),
 		settings: settings,
 		src:      src,
 		adder:    adder,
 		done:     done,
-		results:  results,
+		rchan:    rchan,
 		stop:     make(chan bool),
 	}
 
@@ -157,11 +158,11 @@ func (w *Worker) TryURL(task *url.URL) {
 	w.redir = nil
 	req := w.MakeRequest(task)
 	if resp, err := w.client.Do(req); err != nil && w.redir == nil {
-		result := Result{URL: task, Error: err}
+		result := results.Result{URL: task, Error: err}
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
-		w.results <- result
+		w.rchan <- result
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
@@ -180,7 +181,7 @@ func (w *Worker) TryURL(task *url.URL) {
 		if resp.ContentLength > 0 {
 			length = resp.ContentLength
 		}
-		w.results <- Result{
+		w.rchan <- results.Result{
 			URL:    task,
 			Code:   resp.StatusCode,
 			Redir:  redir,
@@ -259,11 +260,11 @@ func StartWorkers(settings *ss.ScanSettings,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	results chan<- Result) []*Worker {
+	rchan chan<- results.Result) []*Worker {
 	count := settings.Workers
 	workers := make([]*Worker, count)
 	for i := 0; i < count; i++ {
-		workers[i] = NewWorker(settings, factory, src, adder, done, results)
+		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
 	}
 	return workers
@@ -284,9 +285,9 @@ func Mangle(basename string) []string {
 		"%s.bak",  // Backup file
 		"%s.orig", //Backup file
 	}
-	results := make([]string, len(mangleRules))
+	res := make([]string, len(mangleRules))
 	for i, rule := range mangleRules {
-		results[i] = fmt.Sprintf(rule, basename)
+		res[i] = fmt.Sprintf(rule, basename)
 	}
-	return results
+	return res
 }

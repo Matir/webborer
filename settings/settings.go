@@ -225,6 +225,6 @@ func (settings *ScanSettings) String() string {
 }
 
 // Init output formats
-func setOutputFormats(formats []string) {
+func SetOutputFormats(formats []string) {
 	outputFormats = formats
 }
