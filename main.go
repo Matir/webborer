@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/Matir/gobuster/client"
+	"github.com/Matir/gobuster/filter"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
 	ss "github.com/Matir/gobuster/settings"
@@ -78,9 +79,9 @@ func main() {
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
-	expander := Expander{Wordlist: &words, Adder: queue.GetAddCount()}
+	expander := filter.Expander{Wordlist: &words, Adder: queue.GetAddCount()}
 	expander.ProcessWordlist()
-	filter := NewWorkFilter(settings, queue.GetDoneFunc())
+	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
