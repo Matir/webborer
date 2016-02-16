@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/workqueue"
 	"golang.org/x/net/html"
 	"io"
 	"net/http"
@@ -44,9 +45,9 @@ type Worker struct {
 	// Channel for URLs to scan
 	src <-chan *url.URL
 	// Function to add future work
-	adder QueueAddFunc
+	adder workqueue.QueueAddFunc
 	// Function to mark work done
-	done QueueDoneFunc
+	done workqueue.QueueDoneFunc
 	// Channel for scan results
 	results chan<- Result
 	// Settings
@@ -61,15 +62,15 @@ type Worker struct {
 
 type HTMLWorker struct {
 	// Function to add future work
-	adder QueueAddFunc
+	adder workqueue.QueueAddFunc
 }
 
 // Construct a worker with given settings.
 func NewWorker(settings *ss.ScanSettings,
 	factory ClientFactory,
 	src <-chan *url.URL,
-	adder QueueAddFunc,
-	done QueueDoneFunc,
+	adder workqueue.QueueAddFunc,
+	done workqueue.QueueDoneFunc,
 	results chan<- Result) *Worker {
 	w := &Worker{
 		client:   factory.Get(),
@@ -198,7 +199,7 @@ func (w *Worker) MakeRequest(task *url.URL) *http.Request {
 	return req
 }
 
-func NewHTMLWorker(adder QueueAddFunc) *HTMLWorker {
+func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 	return &HTMLWorker{adder: adder}
 }
 
@@ -256,8 +257,8 @@ func (*HTMLWorker) GetLinks(body io.Reader) []string {
 func StartWorkers(settings *ss.ScanSettings,
 	factory ClientFactory,
 	src <-chan *url.URL,
-	adder QueueAddFunc,
-	done QueueDoneFunc,
+	adder workqueue.QueueAddFunc,
+	done workqueue.QueueDoneFunc,
 	results chan<- Result) []*Worker {
 	count := settings.Workers
 	workers := make([]*Worker, count)

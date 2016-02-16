@@ -18,6 +18,7 @@ import (
 	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/wordlist"
+	"github.com/Matir/gobuster/workqueue"
 	"net/url"
 	"runtime"
 )
@@ -69,7 +70,7 @@ func main() {
 
 	// Setup the main workqueue
 	logging.Logf(logging.LogDebug, "Starting work queue...")
-	queue := NewWorkQueue(settings.QueueSize, MakeScopeFunc(scope))
+	queue := workqueue.NewWorkQueue(settings.QueueSize, MakeScopeFunc(scope))
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")

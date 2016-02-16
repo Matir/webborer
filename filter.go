@@ -17,6 +17,7 @@ package main
 import (
 	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/workqueue"
 	"net/url"
 )
 
@@ -29,10 +30,10 @@ type WorkFilter struct {
 	// Excluded paths
 	exclusions []*url.URL
 	// Count the work that has been dropped
-	counter QueueDoneFunc
+	counter workqueue.QueueDoneFunc
 }
 
-func NewWorkFilter(settings *ss.ScanSettings, counter QueueDoneFunc) *WorkFilter {
+func NewWorkFilter(settings *ss.ScanSettings, counter workqueue.QueueDoneFunc) *WorkFilter {
 	wf := &WorkFilter{done: make(map[string]bool), settings: settings, counter: counter}
 	wf.exclusions = make([]*url.URL, 0, len(settings.ExcludePaths))
 	for _, path := range settings.ExcludePaths {
