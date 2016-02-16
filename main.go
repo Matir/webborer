@@ -17,6 +17,7 @@ package main
 import (
 	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
+	"github.com/Matir/gobuster/wordlist"
 	"net/url"
 	"runtime"
 )
@@ -40,11 +41,11 @@ func main() {
 	runtime.GOMAXPROCS(settings.Threads)
 
 	// Load wordlist
-	var wordlist []string
+	var words []string
 	if settings.WordlistPath != "" {
-		wordlist, err = ReadWordlistFile(settings.WordlistPath)
+		words, err = wordlist.ReadWordlistFile(settings.WordlistPath)
 	} else {
-		wordlist, err = LoadDefaultWordlist()
+		words, err = wordlist.LoadDefaultWordlist()
 	}
 	if err != nil {
 		logging.Logf(logging.LogFatal, "Unable to load wordlist: %s", err.Error())
@@ -72,7 +73,7 @@ func main() {
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
-	expander := Expander{Wordlist: &wordlist, Adder: queue.GetAddCount()}
+	expander := Expander{Wordlist: &words, Adder: queue.GetAddCount()}
 	expander.ProcessWordlist()
 	filter := NewWorkFilter(settings, queue.GetDoneFunc())
 	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
