@@ -1,0 +1,11 @@
+User-Agent: a
+Disallow: /a
+Disallow: /b
+Disallow: /c
+
+User-Agent: b
+User-Agent: c # Multiple UAs in this group
+Disallow: /foo/bar
+
+User-Agent: *
+Disallow: / # wildcard sees nothing!
