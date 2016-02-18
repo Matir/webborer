@@ -126,15 +126,15 @@ func (f DurationFlag) Set(value string) error {
 }
 
 // RobotsFlag is a RobotsMode as a flag
-type RobotsFlag struct {
+type robotsFlag struct {
 	mode *int
 }
 
-func (f RobotsFlag) String() string {
+func (f robotsFlag) String() string {
 	return robotsModeStrings[*(f.mode)]
 }
 
-func (f RobotsFlag) Set(value string) error {
+func (f robotsFlag) Set(value string) error {
 	for i, val := range robotsModeStrings {
 		if val == value {
 			*(f.mode) = i
@@ -201,6 +201,9 @@ func (settings *ScanSettings) InitFlags() {
 	flag.StringVar(&settings.LogLevel, "loglevel", settings.LogLevel, loglevelHelp)
 	flag.StringVar(&settings.UserAgent, "user-agent", DefaultUserAgent, "`User-Agent` for requests")
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
+	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings, ", "))
+	robotsModeVar := robotsFlag{&settings.RobotsMode}
+	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
 
 	settings.flagsSet = true
 }
