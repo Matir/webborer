@@ -65,10 +65,25 @@ type ScanSettings struct {
 	UserAgent string
 	// Whether to include redirects in reporting
 	IncludeRedirects bool
+	// How to handle Robots.txt
+	RobotsMode int
 	// Config file used when loading (for debugging only)
 	configPath string
 	// Have flags been set up?
 	flagsSet bool
+}
+
+// We handle Robots.txt in various ways
+const (
+	IgnoreRobots = iota
+	ObeyRobots
+	SeedRobots
+)
+
+var robotsModeStrings = []string{
+	"ignore",
+	"obey",
+	"seed",
 }
 
 var DefaultUserAgent = "GoBuster 0.01"
@@ -108,6 +123,25 @@ func (f DurationFlag) Set(value string) error {
 		*f.d = d
 	}
 	return nil
+}
+
+// RobotsFlag is a RobotsMode as a flag
+type RobotsFlag struct {
+	mode *int
+}
+
+func (f RobotsFlag) String() string {
+	return robotsModeStrings[*(f.mode)]
+}
+
+func (f RobotsFlag) Set(value string) error {
+	for i, val := range robotsModeStrings {
+		if val == value {
+			*(f.mode) = i
+			return nil
+		}
+	}
+	return fmt.Errorf("Unknown Robots Mode: %s", value)
 }
 
 // Constructs a ScanSettings struct with all of the defaults to be used.

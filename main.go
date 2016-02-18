@@ -19,6 +19,7 @@ import (
 	"github.com/Matir/gobuster/filter"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
+	"github.com/Matir/gobuster/robots"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/wordlist"
@@ -83,6 +84,21 @@ func main() {
 	expander.ProcessWordlist()
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
+
+	// Check robots mode
+	if settings.RobotsMode == ss.ObeyRobots {
+		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
+				if pathURL, err := url.Parse(disallowed); err != nil {
+					disallowedURL := scope.ResolveReference(pathURL)
+					filter.FilterURL(disallowedURL)
+				}
+			}
+		}
+	}
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
 	rchan := make(chan results.Result, settings.QueueSize)

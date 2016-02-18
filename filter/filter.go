@@ -71,6 +71,11 @@ func (f *WorkFilter) Filter(src <-chan *url.URL) <-chan *url.URL {
 	return c
 }
 
+// Add another URL to filter
+func (f *WorkFilter) FilterURL(u *url.URL) {
+	f.exclusions = append(f.exclusions, u)
+}
+
 // Task that can't be used
 func (f *WorkFilter) reject(u *url.URL) {
 	logging.Logf(logging.LogDebug, "Filter rejected %s.", u.String())
