@@ -60,7 +60,7 @@ func main() {
 
 	// Build an HTTP Client Factory
 	logging.Logf(logging.LogDebug, "Creating Client Factory...")
-	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout)
+	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout, settings.UserAgent)
 
 	// Starting point
 	scope, err := url.Parse(settings.BaseURL)

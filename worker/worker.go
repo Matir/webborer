@@ -44,7 +44,7 @@ type PageWorker interface {
 // will be used due to network latency.
 type Worker struct {
 	// client for connections
-	client *http.Client
+	client *client.Client
 	// Channel for URLs to scan
 	src <-chan *url.URL
 	// Function to add future work
@@ -158,8 +158,7 @@ func (w *Worker) TryMangleURL(task *url.URL) {
 func (w *Worker) TryURL(task *url.URL) {
 	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
 	w.redir = nil
-	req := w.MakeRequest(task)
-	if resp, err := w.client.Do(req); err != nil && w.redir == nil {
+	if resp, err := w.client.RequestURL(task); err != nil && w.redir == nil {
 		result := results.Result{URL: task, Error: err}
 		if resp != nil {
 			result.Code = resp.StatusCode
@@ -193,13 +192,6 @@ func (w *Worker) TryURL(task *url.URL) {
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
-}
-
-func (w *Worker) MakeRequest(task *url.URL) *http.Request {
-	// TODO: support other methods
-	req, _ := http.NewRequest("GET", task.String(), nil)
-	req.Header.Set("User-Agent", w.settings.UserAgent)
-	return req
 }
 
 func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
