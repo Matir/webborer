@@ -16,6 +16,7 @@ package filter
 
 import (
 	"fmt"
+	"github.com/Matir/gobuster/settings"
 	"net/url"
 	"testing"
 )
@@ -30,7 +31,7 @@ func TestFilterDuplicates(t *testing.T) {
 	src <- &url.URL{Path: "/a"}
 	dupes := 0
 	dupefunc := func(i int) { dupes += i }
-	filter := NewWorkFilter(&ScanSettings{}, dupefunc)
+	filter := NewWorkFilter(&settings.ScanSettings{}, dupefunc)
 	fmt.Println("Starting filtering...")
 	close(src)
 	out := filter.Filter(src)
