@@ -122,6 +122,21 @@ func main() {
 	logging.Logf(logging.LogDebug, "Adding starting URL: %s", scope)
 	queue.AddURLs(scope)
 
+	// Potentially seed from robots
+	if settings.RobotsMode == ss.SeedRobots {
+		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, path := range robotsData.GetAllPaths() {
+				if pathURL, err := url.Parse(path); err != nil {
+					// Filter will handle if this is out of scope
+					queue.AddURLs(scope.ResolveReference(pathURL))
+				}
+			}
+		}
+	}
+
 	// Wait for work to be done
 	logging.Logf(logging.LogDebug, "Main goroutine waiting for work...")
 	queue.WaitPipe()
