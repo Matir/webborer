@@ -17,6 +17,7 @@ package robots
 import (
 	"bytes"
 	"github.com/Matir/gobuster/client"
+	"io/ioutil"
 	"net/url"
 )
 
@@ -81,8 +82,41 @@ func GetRobotsForURL(target *url.URL, factory client.ClientFactory) (*RobotsData
 	client := factory.Get()
 	ref, _ := url.Parse("/robots.txt")
 	robotsURL := target.ResolveReference(ref)
-	// Make the request and parse the result
+	resp, err := client.RequestURL(robotsURL)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRobotsTxt(body)
 }
 
-func (data *RobotsData) GetForUserAgent(agent string) []string {
+func (data *RobotsData) GetForUserAgent(targetAgent string) []string {
+	for _, group := range data.Groups {
+		for _, agent := range group.UserAgents {
+			if agent == targetAgent {
+				return group.Disallow
+			}
+		}
+	}
+
+	// Fallback to '*'
+	for _, group := range data.Groups {
+		for _, agent := range group.UserAgents {
+			if agent == "*" {
+				return group.Disallow
+			}
+		}
+	}
+	return nil
+}
+
+func (data *RobotsData) GetAllPaths() []string {
+	results := make([]string, 0)
+	for _, group := range data.Groups {
+		results = append(results, group.Disallow...)
+	}
+	return results
 }
