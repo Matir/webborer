@@ -19,6 +19,7 @@ import (
 	"github.com/Matir/gobuster/filter"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
+	"github.com/Matir/gobuster/robots"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/wordlist"
@@ -84,6 +85,21 @@ func main() {
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
 
+	// Check robots mode
+	if settings.RobotsMode == ss.ObeyRobots {
+		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
+				if pathURL, err := url.Parse(disallowed); err != nil {
+					disallowedURL := scope.ResolveReference(pathURL)
+					filter.FilterURL(disallowedURL)
+				}
+			}
+		}
+	}
+
 	logging.Logf(logging.LogDebug, "Creating results manager...")
 	rchan := make(chan results.Result, settings.QueueSize)
 	resultsManager, err := results.GetResultsManager(settings)
@@ -105,6 +121,21 @@ func main() {
 	// Kick things off with the seed URL
 	logging.Logf(logging.LogDebug, "Adding starting URL: %s", scope)
 	queue.AddURLs(scope)
+
+	// Potentially seed from robots
+	if settings.RobotsMode == ss.SeedRobots {
+		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, path := range robotsData.GetAllPaths() {
+				if pathURL, err := url.Parse(path); err != nil {
+					// Filter will handle if this is out of scope
+					queue.AddURLs(scope.ResolveReference(pathURL))
+				}
+			}
+		}
+	}
 
 	// Wait for work to be done
 	logging.Logf(logging.LogDebug, "Main goroutine waiting for work...")
