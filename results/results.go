@@ -89,7 +89,8 @@ func init() {
 
 // Returns true if this is a "useful" result
 func FoundSomething(code int) bool {
-	return (code != http.StatusNotFound &&
+	return (code != 0 &&
+		code != http.StatusNotFound &&
 		code != http.StatusGone &&
 		code != http.StatusBadGateway &&
 		code != http.StatusServiceUnavailable &&
