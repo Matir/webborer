@@ -97,6 +97,11 @@ func FoundSomething(code int) bool {
 		code != http.StatusGatewayTimeout)
 }
 
+// Returns true if this result should be included in reports
+func ReportResult(res Result) bool {
+	return res.Error == nil && FoundSomething(res.Code)
+}
+
 // Construct a ResultsManager for the given settings in the ss.ScanSettings.
 // Returns an object satisfying the ResultsManager interface or an error.
 func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
@@ -148,7 +153,7 @@ func (rm *PlainResultsManager) Run(res <-chan Result) {
 		}()
 
 		for r := range res {
-			if !FoundSomething(r.Code) {
+			if !ReportResult(r) {
 				continue
 			}
 			if r.Redir == nil {
@@ -181,7 +186,7 @@ func (rm *CSVResultsManager) Run(res <-chan Result) {
 		rm.writer.Write([]string{"code", "url", "content_length", "redirect_url"})
 
 		for r := range res {
-			if !FoundSomething(r.Code) {
+			if !ReportResult(r) {
 				continue
 			}
 			record := []string{
@@ -209,7 +214,7 @@ func (rm *HTMLResultsManager) Run(res <-chan Result) {
 		}()
 
 		for r := range res {
-			if !FoundSomething(r.Code) {
+			if !ReportResult(r) {
 				continue
 			}
 			if r.Redir != nil {
