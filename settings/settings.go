@@ -97,6 +97,9 @@ type StringSliceFlag struct {
 
 // Satisfies flag.Value interface and splits value on commas
 func (f StringSliceFlag) String() string {
+	if f.slice == nil {
+		return ""
+	}
 	return strings.Join(*f.slice, ",")
 }
 
@@ -113,6 +116,9 @@ type DurationFlag struct {
 
 // Satisfies flag.Value interface and converts to a duration based on seconds
 func (f DurationFlag) String() string {
+	if f.d == nil {
+		return ""
+	}
 	return f.d.String()
 }
 
@@ -131,6 +137,9 @@ type robotsFlag struct {
 }
 
 func (f robotsFlag) String() string {
+	if f.mode == nil {
+		return robotsModeStrings[IgnoreRobots]
+	}
 	return robotsModeStrings[*(f.mode)]
 }
 
