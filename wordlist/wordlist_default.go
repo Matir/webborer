@@ -486,7 +486,7 @@ logo
 logon
 logout
 logs
-lost%2Bfound
+lost+found
 ls
 magic
 mail
