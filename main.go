@@ -79,7 +79,7 @@ func main() {
 
 	// Setup the main workqueue
 	logging.Logf(logging.LogDebug, "Starting work queue...")
-	queue := workqueue.NewWorkQueue(settings.QueueSize, MakeScopeFunc(scope))
+	queue := workqueue.NewWorkQueue(settings.QueueSize, MakeScopeFunc(scope, settings.AllowHTTPSUpgrade))
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
@@ -160,7 +160,19 @@ func main() {
 }
 
 // Build a function to check if the target URL is in scope.
-func MakeScopeFunc(scope []*url.URL) func(*url.URL) bool {
+func MakeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
+	allowedScopes := make([]*url.URL, len(scope))
+	copy(allowedScopes, scope)
+	if allowUpgrades {
+		for _, scopeURL := range scope {
+			if scopeURL.Scheme == "http" {
+				deref := *scopeURL
+				clone := &deref // Can't find a way to do this in one statement
+				clone.Scheme = "https"
+				allowedScopes = append(allowedScopes, clone)
+			}
+		}
+	}
 	return func(target *url.URL) bool {
 		for _, scopeURL := range scope {
 			if util.URLIsSubpath(scopeURL, target) {

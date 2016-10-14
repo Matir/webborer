@@ -67,6 +67,8 @@ type ScanSettings struct {
 	IncludeRedirects bool
 	// How to handle Robots.txt
 	RobotsMode int
+	// Whether to allow upgrade from http to https
+	AllowHTTPSUpgrade bool
 	// Config file used when loading (for debugging only)
 	configPath string
 	// Have flags been set up?
@@ -193,6 +195,7 @@ func (settings *ScanSettings) InitFlags() {
 	excludePathValue := StringSliceFlag{&settings.ExcludePaths}
 	flag.Var(excludePathValue, "exclude", "List of `paths` to exclude from search.")
 	flag.BoolVar(&settings.ParseHTML, "html", true, "Parse HTML documents for links to follow.")
+	flag.BoolVar(&settings.AllowHTTPSUpgrade, "allow-upgrade", false, "Allow HTTP->HTTPS upgrades.")
 	sleepTimeValue := DurationFlag{&settings.SleepTime}
 	flag.Var(sleepTimeValue, "sleep", "Time (as `duration`) to sleep between requests.")
 	flag.StringVar(&settings.LogfilePath, "logfile", "", "Logfile `filename` (defaults to stderr)")
