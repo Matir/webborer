@@ -125,7 +125,8 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 	case format == "csv":
 		return &CSVResultsManager{writer: csv.NewWriter(writer), fp: fp}, nil
 	case format == "html":
-		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURL}, nil
+		// TODO: do more than the first
+		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURLs[0]}, nil
 	}
 	return nil, fmt.Errorf("Invalid output type: %s", format)
 }

@@ -30,7 +30,7 @@ import (
 // into setup functions to get the desired behavior.
 type ScanSettings struct {
 	// Starting point and scope of scan
-	BaseURL string
+	BaseURLs []string
 	// Number of threads to run
 	Threads int
 	// Number of workers to run
@@ -186,7 +186,8 @@ func (settings *ScanSettings) InitFlags() {
 		return
 	}
 
-	flag.StringVar(&settings.BaseURL, "url", "", "Starting `URL` & scope.")
+	baseUrlValue := StringSliceFlag{&settings.BaseURLs}
+	flag.Var(baseUrlValue, "url", "Starting `URL` & scopes.")
 	flag.IntVar(&settings.Threads, "threads", runtime.NumCPU(), "Number of worker `threads`.")
 	flag.IntVar(&settings.Workers, "workers", runtime.NumCPU()*2, "Number of `workers`.")
 	excludePathValue := StringSliceFlag{&settings.ExcludePaths}
@@ -241,8 +242,8 @@ func (settings *ScanSettings) LoadFromConfigFile(path string) {
 func (settings *ScanSettings) ParseFlags() {
 	settings.InitFlags()
 	flag.Parse()
-	if settings.BaseURL == "" && flag.NArg() > 0 {
-		settings.BaseURL = flag.Arg(0)
+	for i := 0; i < flag.NArg(); i++ {
+		settings.BaseURLs = append(settings.BaseURLs, flag.Arg(i))
 	}
 }
 
@@ -253,7 +254,7 @@ func (settings *ScanSettings) Validate() error {
 		flag.PrintDefaults()
 		return errors.New(str)
 	}
-	if settings.BaseURL == "" {
+	if len(settings.BaseURLs) == 0 {
 		return flagError("URL is required.")
 	}
 	return nil

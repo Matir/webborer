@@ -64,15 +64,18 @@ func main() {
 	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout, settings.UserAgent)
 
 	// Starting point
-	scope, err := url.Parse(settings.BaseURL)
-	if err != nil {
-		logging.Logf(logging.LogFatal, "Unable to parse BaseURL: %s", err.Error())
-		return
+	scope := make([]*url.URL, len(settings.BaseURLs))
+	for i, baseURL := range settings.BaseURLs {
+		scope[i], err = url.Parse(baseURL)
+		if err != nil {
+			logging.Logf(logging.LogFatal, "Unable to parse BaseURL (%s): %s", baseURL, err.Error())
+			return
+		}
+		if scope[i].Path == "" {
+			scope[i].Path = "/"
+		}
+		logging.Logf(logging.LogDebug, "Added BaseURL: %s", scope[i].String())
 	}
-	if scope.Path == "" {
-		scope.Path = "/"
-	}
-	logging.Logf(logging.LogDebug, "BaseURL: %s", scope.String())
 
 	// Setup the main workqueue
 	logging.Logf(logging.LogDebug, "Starting work queue...")
@@ -87,14 +90,16 @@ func main() {
 
 	// Check robots mode
 	if settings.RobotsMode == ss.ObeyRobots {
-		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
-		if err != nil {
-			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
-		} else {
-			for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
-				if pathURL, err := url.Parse(disallowed); err != nil {
-					disallowedURL := scope.ResolveReference(pathURL)
-					filter.FilterURL(disallowedURL)
+		for _, scopeURL := range scope {
+			robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
+			if err != nil {
+				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+			} else {
+				for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
+					if pathURL, err := url.Parse(disallowed); err != nil {
+						disallowedURL := scopeURL.ResolveReference(pathURL)
+						filter.FilterURL(disallowedURL)
+					}
 				}
 			}
 		}
@@ -119,19 +124,23 @@ func main() {
 	resultsManager.Run(rchan)
 
 	// Kick things off with the seed URL
-	logging.Logf(logging.LogDebug, "Adding starting URL: %s", scope)
-	queue.AddURLs(scope)
+	for _, scopeURL := range scope {
+		logging.Logf(logging.LogDebug, "Adding starting URL: %s", scopeURL)
+		queue.AddURLs(scopeURL)
+	}
 
 	// Potentially seed from robots
 	if settings.RobotsMode == ss.SeedRobots {
-		robotsData, err := robots.GetRobotsForURL(scope, clientFactory)
-		if err != nil {
-			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
-		} else {
-			for _, path := range robotsData.GetAllPaths() {
-				if pathURL, err := url.Parse(path); err != nil {
-					// Filter will handle if this is out of scope
-					queue.AddURLs(scope.ResolveReference(pathURL))
+		for _, scopeURL := range scope {
+			robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
+			if err != nil {
+				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+			} else {
+				for _, path := range robotsData.GetAllPaths() {
+					if pathURL, err := url.Parse(path); err != nil {
+						// Filter will handle if this is out of scope
+						queue.AddURLs(scopeURL.ResolveReference(pathURL))
+					}
 				}
 			}
 		}
@@ -151,8 +160,13 @@ func main() {
 }
 
 // Build a function to check if the target URL is in scope.
-func MakeScopeFunc(scope *url.URL) func(*url.URL) bool {
+func MakeScopeFunc(scope []*url.URL) func(*url.URL) bool {
 	return func(target *url.URL) bool {
-		return util.URLIsSubpath(scope, target)
+		for _, scopeURL := range scope {
+			if util.URLIsSubpath(scopeURL, target) {
+				return true
+			}
+		}
+		return false
 	}
 }
