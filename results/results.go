@@ -159,7 +159,7 @@ func (rm *PlainResultsManager) Run(res <-chan Result) {
 			}
 			if r.Redir == nil {
 				fmt.Fprintf(rm.writer, "%d %s (%d bytes)\n", r.Code, r.URL.String(), r.Length)
-			} else {
+			} else if rm.redirs {
 				fmt.Fprintf(rm.writer, "%d %s -> %s\n", r.Code, r.URL.String(), r.Redir.String())
 			}
 		}
