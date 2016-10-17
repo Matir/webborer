@@ -16,10 +16,26 @@ package wordlist
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"strings"
 )
+
+// First try loading from a file, then try loading from built-ins
+func LoadWordlist(path string) ([]string, error) {
+	if path == "" {
+		return LoadBuiltinWordlist("default")
+	}
+	wl, wl_err := ReadWordlistFile(path)
+	if wl_err == nil {
+		return wl, nil
+	}
+	if wl, err := LoadBuiltinWordlist(path); err == nil {
+		return wl, nil
+	}
+	return nil, wl_err
+}
 
 // Load a Wordlist from a file.
 func ReadWordlistFile(path string) ([]string, error) {
@@ -49,6 +65,12 @@ func ReadWordlist(rdr io.Reader) ([]string, error) {
 }
 
 // Loads a built-in wordlist for basic scans.
-func LoadDefaultWordlist() ([]string, error) {
-	return ReadWordlist(strings.NewReader(DefaultWordlist))
+func LoadBuiltinWordlist(which string) ([]string, error) {
+	switch which {
+	case "default":
+		return ReadWordlist(strings.NewReader(DefaultWordlist))
+	case "short":
+		return ReadWordlist(strings.NewReader(ShortWordlist))
+	}
+	return nil, errors.New("No such built-in wordlist.")
 }

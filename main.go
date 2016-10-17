@@ -49,11 +49,7 @@ func main() {
 
 	// Load wordlist
 	var words []string
-	if settings.WordlistPath != "" {
-		words, err = wordlist.ReadWordlistFile(settings.WordlistPath)
-	} else {
-		words, err = wordlist.LoadDefaultWordlist()
-	}
+	words, err = wordlist.LoadWordlist(settings.WordlistPath)
 	if err != nil {
 		logging.Logf(logging.LogFatal, "Unable to load wordlist: %s", err.Error())
 		return
