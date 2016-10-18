@@ -54,13 +54,13 @@ func (f *WorkFilter) Filter(src <-chan *url.URL) <-chan *url.URL {
 		for task := range src {
 			taskURL := task.String()
 			if _, ok := f.done[taskURL]; ok {
-				f.reject(task)
+				f.reject(task, "already done")
 				continue
 			}
 			f.done[taskURL] = true
 			for _, exclusion := range f.exclusions {
 				if util.URLIsSubpath(exclusion, task) {
-					f.reject(task)
+					f.reject(task, "excluded")
 					continue taskLoop
 				}
 			}
@@ -77,7 +77,7 @@ func (f *WorkFilter) FilterURL(u *url.URL) {
 }
 
 // Task that can't be used
-func (f *WorkFilter) reject(u *url.URL) {
-	logging.Logf(logging.LogDebug, "Filter rejected %s.", u.String())
+func (f *WorkFilter) reject(u *url.URL, reason string) {
+	logging.Logf(logging.LogDebug, "Filter rejected %s: %s.", u.String(), reason)
 	f.counter(1)
 }
