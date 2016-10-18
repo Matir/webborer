@@ -34,6 +34,7 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 	return &HTMLWorker{adder: adder}
 }
 
+// Work on this response
 func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 	links := w.GetLinks(body)
 	foundURLs := make([]*url.URL, 0, len(links))
@@ -48,12 +49,27 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 	w.adder(foundURLs...)
 }
 
+// Check if this response can be handled by this worker
 func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-type")
 	if strings.ToLower(ct) != "text/html" {
 		return false
 	}
 	return resp.ContentLength > 0 && resp.ContentLength < 1024*1024
+}
+
+// Get the links for the body.
+func (*HTMLWorker) GetLinks(body io.Reader) []string {
+	tree, err := html.Parse(body)
+	if err != nil {
+		logging.Logf(logging.LogInfo, "Unable to parse HTML document: %s", err.Error())
+		return nil
+	}
+	links := collectElementAttributes(tree, "a", "href")
+	links = append(links, collectElementAttributes(tree, "img", "src")...)
+	links = append(links, collectElementAttributes(tree, "script", "src")...)
+	links = append(links, collectElementAttributes(tree, "style", "src")...)
+	return util.DedupeStrings(links)
 }
 
 func getElementsByTagName(root *html.Node, name string) []*html.Node {
@@ -88,14 +104,4 @@ func collectElementAttributes(root *html.Node, tagName, attrName string) []strin
 		}
 	}
 	return results
-}
-
-func (*HTMLWorker) GetLinks(body io.Reader) []string {
-	tree, err := html.Parse(body)
-	if err != nil {
-		logging.Logf(logging.LogInfo, "Unable to parse HTML document: %s", err.Error())
-		return nil
-	}
-	links := collectElementAttributes(tree, "a", "href")
-	return util.DedupeStrings(links)
 }
