@@ -122,11 +122,13 @@ func (w *Worker) HandleURL(task *url.URL) {
 		if withMangle {
 			w.TryMangleURL(task)
 		}
-		for _, ext := range w.settings.Extensions {
-			task := *task
-			task.Path += "." + ext
-			if w.TryURL(&task) {
-				w.TryMangleURL(&task)
+		if !util.URLHasExtension(task) {
+			for _, ext := range w.settings.Extensions {
+				task := *task
+				task.Path += "." + ext
+				if w.TryURL(&task) {
+					w.TryMangleURL(&task)
+				}
 			}
 		}
 	}

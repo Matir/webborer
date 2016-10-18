@@ -26,6 +26,7 @@ import (
 )
 
 var slash = byte('/')
+var dot = byte('.')
 
 func URLIsDir(u *url.URL) bool {
 	l := len(u.Path)
@@ -33,6 +34,10 @@ func URLIsDir(u *url.URL) bool {
 		return true
 	}
 	return u.Path[l-1] == slash
+}
+
+func URLHasExtension(u *url.URL) bool {
+	return strings.LastIndexByte(u.Path, dot) > strings.LastIndexByte(u.Path, slash)
 }
 
 // Find the group (200, 300, 400, 500, ...) this status code belongs to

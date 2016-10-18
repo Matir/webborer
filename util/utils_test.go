@@ -49,6 +49,25 @@ func TestURLIsDir(t *testing.T) {
 	}
 }
 
+func TestURLHasExtension(t *testing.T) {
+	u := &url.URL{Path: "/foo.txt"}
+	if !URLHasExtension(u) {
+		t.Errorf("%s has an extension.", u.Path)
+	}
+	u.Path = "/foo"
+	if URLHasExtension(u) {
+		t.Errorf("%s doesn't have an extension.", u.Path)
+	}
+	u.Path = "/dot.dir/"
+	if URLHasExtension(u) {
+		t.Errorf("%s doesn't have an extension.", u.Path)
+	}
+	u.Path = "/dot.dir/file.ext"
+	if !URLHasExtension(u) {
+		t.Errorf("%s has an extension.", u.Path)
+	}
+}
+
 func TestStatusCodeGroup(t *testing.T) {
 	tests := map[int]int{
 		200: 200,
