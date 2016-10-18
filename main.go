@@ -87,15 +87,16 @@ func main() {
 	// Check robots mode
 	if settings.RobotsMode == ss.ObeyRobots {
 		for _, scopeURL := range scope {
+			logging.Logf(logging.LogDebug, "Getting robots.txt exclusions for %s", scopeURL)
 			robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
 			if err != nil {
 				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
 			} else {
 				for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
-					if pathURL, err := url.Parse(disallowed); err != nil {
-						disallowedURL := scopeURL.ResolveReference(pathURL)
-						filter.FilterURL(disallowedURL)
-					}
+					disallowedURL := *scopeURL
+					disallowedURL.Path = disallowed
+					logging.Logf(logging.LogDebug, "Disallowing URL by robots: %s", &disallowedURL)
+					filter.FilterURL(&disallowedURL)
 				}
 			}
 		}
@@ -133,10 +134,10 @@ func main() {
 				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
 			} else {
 				for _, path := range robotsData.GetAllPaths() {
-					if pathURL, err := url.Parse(path); err != nil {
-						// Filter will handle if this is out of scope
-						queue.AddURLs(scopeURL.ResolveReference(pathURL))
-					}
+					pathURL := *scopeURL
+					pathURL.Path = path
+					// Filter will handle if this is out of scope
+					queue.AddURLs(scopeURL.ResolveReference(&pathURL))
 				}
 			}
 		}

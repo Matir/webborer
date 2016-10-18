@@ -102,15 +102,12 @@ func (data *RobotsData) GetForUserAgent(targetAgent string) []string {
 		}
 	}
 
-	// Fallback to '*'
-	for _, group := range data.Groups {
-		for _, agent := range group.UserAgents {
-			if agent == "*" {
-				return group.Disallow
-			}
-		}
+	if targetAgent == "*" {
+		return nil
 	}
-	return nil
+
+	// Fallback to '*'
+	return data.GetForUserAgent("*")
 }
 
 func (data *RobotsData) GetAllPaths() []string {
