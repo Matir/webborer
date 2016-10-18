@@ -45,6 +45,9 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 			continue
 		}
 		resolved := URL.ResolveReference(u)
+		foundURLs = append(foundURLs, resolved)
+		// Include parents of the found URL.
+		// Worker will remove duplicates
 		foundURLs = append(foundURLs, util.GetParentPaths(resolved)...)
 	}
 	w.adder(foundURLs...)
