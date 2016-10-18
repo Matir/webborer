@@ -117,14 +117,17 @@ func (w *Worker) Stop() {
 
 func (w *Worker) HandleURL(task *url.URL) {
 	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
-	w.TryURL(task)
+	withMangle := w.TryURL(task)
 	if !util.URLIsDir(task) {
-		w.TryMangleURL(task)
+		if withMangle {
+			w.TryMangleURL(task)
+		}
 		for _, ext := range w.settings.Extensions {
 			task := *task
 			task.Path += "." + ext
-			w.TryURL(&task)
-			w.TryMangleURL(&task)
+			if w.TryURL(&task) {
+				w.TryMangleURL(&task)
+			}
 		}
 	}
 	// Mark as done
@@ -149,8 +152,9 @@ func (w *Worker) TryMangleURL(task *url.URL) {
 	}
 }
 
-func (w *Worker) TryURL(task *url.URL) {
+func (w *Worker) TryURL(task *url.URL) bool {
 	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
+	tryMangle := false
 	w.redir = nil
 	if resp, err := w.client.RequestURL(task); err != nil && w.redir == nil {
 		result := results.Result{URL: task, Error: err}
@@ -182,10 +186,12 @@ func (w *Worker) TryURL(task *url.URL) {
 			Redir:  redir,
 			Length: resp.ContentLength,
 		}
+		tryMangle = w.KeepSpidering(resp.StatusCode)
 	}
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
+	return tryMangle
 }
 
 // Should we keep spidering from this code?
