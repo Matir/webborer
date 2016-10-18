@@ -158,7 +158,11 @@ func (rm *PlainResultsManager) Run(res <-chan Result) {
 				continue
 			}
 			if r.Redir == nil {
-				fmt.Fprintf(rm.writer, "%d %s (%d bytes)\n", r.Code, r.URL.String(), r.Length)
+				if r.Length >= 0 {
+					fmt.Fprintf(rm.writer, "%d %s (%d bytes)\n", r.Code, r.URL.String(), r.Length)
+				} else {
+					fmt.Fprintf(rm.writer, "%d %s\n", r.Code, r.URL.String())
+				}
 			} else if rm.redirs {
 				fmt.Fprintf(rm.writer, "%d %s -> %s\n", r.Code, r.URL.String(), r.Redir.String())
 			}
@@ -190,10 +194,14 @@ func (rm *CSVResultsManager) Run(res <-chan Result) {
 			if !ReportResult(r) {
 				continue
 			}
+			var clen string
+			if r.Length >= 0 {
+				clen = fmt.Sprintf("%d", r.Length)
+			}
 			record := []string{
 				fmt.Sprintf("%d", r.Code),
 				r.URL.String(),
-				fmt.Sprintf("%d", r.Length),
+				clen,
 				maybeString(r.Redir),
 			}
 			rm.writer.Write(record)
@@ -257,7 +265,7 @@ func (rm *HTMLResultsManager) writeFooter() {
 
 func (rm *HTMLResultsManager) writeResult(res *Result) {
 	// TODO: don't rebuild the template with each row
-	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{.Length}}</td></tr>{{end}}`
+	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{if ge .Length 0}}{{.Length}}{{end}}</td></tr>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(tmpl)
 	if err != nil {
 		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())

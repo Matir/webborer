@@ -178,15 +178,11 @@ func (w *Worker) TryURL(task *url.URL) {
 		if w.redir != nil {
 			redir = w.redir.URL
 		}
-		var length int64
-		if resp.ContentLength > 0 {
-			length = resp.ContentLength
-		}
 		w.rchan <- results.Result{
 			URL:    task,
 			Code:   resp.StatusCode,
 			Redir:  redir,
-			Length: length,
+			Length: resp.ContentLength,
 		}
 	}
 	if w.settings.SleepTime != 0 {
