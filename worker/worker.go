@@ -210,7 +210,7 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 
 func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-type")
-	if strings.ToLower(ct) == "text/html" {
+	if strings.ToLower(ct) != "text/html" {
 		return false
 	}
 	return resp.ContentLength > 0 && resp.ContentLength < 1024*1024
