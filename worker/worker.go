@@ -22,7 +22,6 @@ import (
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/workqueue"
-	"golang.org/x/net/html"
 	"io"
 	"net/http"
 	"net/url"
@@ -61,11 +60,6 @@ type Worker struct {
 	stop chan bool
 	// Request for redirection
 	redir *http.Request
-}
-
-type HTMLWorker struct {
-	// Function to add future work
-	adder workqueue.QueueAddFunc
 }
 
 // Construct a worker with given settings.
@@ -188,60 +182,6 @@ func (w *Worker) TryURL(task *url.URL) {
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
-}
-
-func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
-	return &HTMLWorker{adder: adder}
-}
-
-func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
-	links := w.GetLinks(body)
-	foundURLs := make([]*url.URL, 0, len(links))
-	for _, l := range links {
-		u, err := url.Parse(l)
-		if err != nil {
-			logging.Logf(logging.LogInfo, "Error parsing URL (%s): %s", l, err.Error())
-			continue
-		}
-		foundURLs = append(foundURLs, URL.ResolveReference(u))
-	}
-	w.adder(foundURLs...)
-}
-
-func (*HTMLWorker) Eligible(resp *http.Response) bool {
-	ct := resp.Header.Get("Content-type")
-	if strings.ToLower(ct) != "text/html" {
-		return false
-	}
-	return resp.ContentLength > 0 && resp.ContentLength < 1024*1024
-}
-
-func (*HTMLWorker) GetLinks(body io.Reader) []string {
-	tree, err := html.Parse(body)
-	if err != nil {
-		logging.Logf(logging.LogInfo, "Unable to parse HTML document: %s", err.Error())
-		return nil
-	}
-	links := make([]string, 0)
-	var handleNode func(*html.Node)
-	handleNode = func(node *html.Node) {
-		if node.Type == html.ElementNode {
-			if strings.ToLower(node.Data) == "a" {
-				for _, a := range node.Attr {
-					if strings.ToLower(a.Key) == "href" {
-						links = append(links, a.Val)
-						break
-					}
-				}
-			}
-		}
-		// Handle children
-		for n := node.FirstChild; n != nil; n = n.NextSibling {
-			handleNode(n)
-		}
-	}
-	handleNode(tree)
-	return util.DedupeStrings(links)
 }
 
 // Starts a batch of workers based on the relevant settings.
