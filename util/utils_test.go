@@ -149,3 +149,19 @@ func BenchmarkURLIsSubpath(b *testing.B) {
 		URLIsSubpath(parent, child2)
 	}
 }
+
+func TestGetParentsPathString(t *testing.T) {
+	pathA := "/abc/def/ghi/jkl.txt"
+	expectedA := []string{"/abc", "/abc/def", "/abc/def/ghi"}
+	resultsA := getParentPathsString(pathA)
+	if !slicesEqual(expectedA, resultsA) {
+		t.Errorf("%v != %v", expectedA, resultsA)
+	}
+
+	pathB := "/abc/def/ghi/jkl/"
+	expectedB := []string{"/abc", "/abc/def", "/abc/def/ghi"}
+	resultsB := getParentPathsString(pathB)
+	if !slicesEqual(expectedB, resultsB) {
+		t.Errorf("%v != %v", expectedB, resultsB)
+	}
+}
