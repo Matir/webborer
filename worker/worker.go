@@ -165,6 +165,10 @@ func (w *Worker) TryURL(task *url.URL) {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
 			w.adder(task)
 		}
+		if w.redir != nil {
+			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
+			w.adder(w.redir.URL)
+		}
 		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
 			w.pageWorker.Handle(task, resp.Body)
 		}
