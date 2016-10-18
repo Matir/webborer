@@ -56,30 +56,46 @@ func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	return resp.ContentLength > 0 && resp.ContentLength < 1024*1024
 }
 
+func getElementsByTagName(root *html.Node, name string) []*html.Node {
+	results := make([]*html.Node, 0)
+	var handleNode func(*html.Node)
+	handleNode = func(node *html.Node) {
+		if node.Type == html.ElementNode && strings.ToLower(node.Data) == name {
+			results = append(results, node)
+		}
+		for n := node.FirstChild; n != nil; n = n.NextSibling {
+			handleNode(n)
+		}
+	}
+	handleNode(root)
+	return results
+}
+
+func getElementAttribute(node *html.Node, attrName string) *string {
+	for _, a := range node.Attr {
+		if strings.ToLower(a.Key) == attrName {
+			return &a.Val
+		}
+	}
+	return nil
+}
+
+func collectElementAttributes(root *html.Node, tagName, attrName string) []string {
+	results := make([]string, 0)
+	for _, el := range getElementsByTagName(root, tagName) {
+		if val := getElementAttribute(el, attrName); val != nil {
+			results = append(results, *val)
+		}
+	}
+	return results
+}
+
 func (*HTMLWorker) GetLinks(body io.Reader) []string {
 	tree, err := html.Parse(body)
 	if err != nil {
 		logging.Logf(logging.LogInfo, "Unable to parse HTML document: %s", err.Error())
 		return nil
 	}
-	links := make([]string, 0)
-	var handleNode func(*html.Node)
-	handleNode = func(node *html.Node) {
-		if node.Type == html.ElementNode {
-			if strings.ToLower(node.Data) == "a" {
-				for _, a := range node.Attr {
-					if strings.ToLower(a.Key) == "href" {
-						links = append(links, a.Val)
-						break
-					}
-				}
-			}
-		}
-		// Handle children
-		for n := node.FirstChild; n != nil; n = n.NextSibling {
-			handleNode(n)
-		}
-	}
-	handleNode(tree)
+	links := collectElementAttributes(tree, "a", "href")
 	return util.DedupeStrings(links)
 }
