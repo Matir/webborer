@@ -44,7 +44,8 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 			logging.Logf(logging.LogInfo, "Error parsing URL (%s): %s", l, err.Error())
 			continue
 		}
-		foundURLs = append(foundURLs, URL.ResolveReference(u))
+		resolved := URL.ResolveReference(u)
+		foundURLs = append(foundURLs, util.GetParentPaths(resolved)...)
 	}
 	w.adder(foundURLs...)
 }
