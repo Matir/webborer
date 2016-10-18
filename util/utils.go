@@ -106,3 +106,24 @@ func URLIsSubpath(parent, child *url.URL) bool {
 	}
 	return cPath[len(pPath)] == slash
 }
+
+// Get the parent paths of a given path
+func GetParentPaths(child *url.URL) []*url.URL {
+	childPath := strings.TrimRight(child.Path, "/")
+	var results []*url.URL
+	for _, path := range getParentPathsString(childPath) {
+		parentURL := *child
+		parentURL.Path = path
+		results = append(results, &parentURL)
+	}
+	return results
+}
+
+func getParentPathsString(childPath string) []string {
+	splitPath := strings.Split(strings.TrimRight(childPath, "/"), "/")
+	var results []string
+	for i := 2; i < len(splitPath); i++ {
+		results = append(results, strings.Join(splitPath[:i], "/"))
+	}
+	return results
+}
