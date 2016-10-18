@@ -167,7 +167,7 @@ func (w *Worker) TryURL(task *url.URL) {
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
-		if util.URLIsDir(task) && util.KeepSpidering(resp.StatusCode) {
+		if util.URLIsDir(task) && w.KeepSpidering(resp.StatusCode) {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
 			w.adder(task)
 		}
@@ -188,6 +188,16 @@ func (w *Worker) TryURL(task *url.URL) {
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
+}
+
+// Should we keep spidering from this code?
+func (w *Worker) KeepSpidering(code int) bool {
+	for _, v := range w.settings.SpiderCodes {
+		if code == v {
+			return true
+		}
+	}
+	return false
 }
 
 func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {

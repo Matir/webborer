@@ -16,7 +16,6 @@ package util
 
 import (
 	"github.com/Matir/gobuster/logging"
-	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -34,13 +33,6 @@ func URLIsDir(u *url.URL) bool {
 		return true
 	}
 	return u.Path[l-1] == slash
-}
-
-// Returns true if this path should be spidered more
-func KeepSpidering(code int) bool {
-	return (StatusCodeGroup(code) == 200 ||
-		code == http.StatusUnauthorized ||
-		code == http.StatusForbidden)
 }
 
 // Find the group (200, 300, 400, 500, ...) this status code belongs to

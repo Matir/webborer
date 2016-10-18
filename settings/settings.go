@@ -21,6 +21,7 @@ import (
 	"github.com/Matir/gobuster/logging"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -69,6 +70,8 @@ type ScanSettings struct {
 	RobotsMode int
 	// Whether to allow upgrade from http to https
 	AllowHTTPSUpgrade bool
+	// Spider which http response codes
+	SpiderCodes []int
 	// Config file used when loading (for debugging only)
 	configPath string
 	// Have flags been set up?
@@ -107,6 +110,36 @@ func (f StringSliceFlag) String() string {
 
 func (f StringSliceFlag) Set(value string) error {
 	*f.slice = strings.Split(value, ",")
+	return nil
+}
+
+// IntSliceFlag is a flag.Value that takes a comma-separated string and turns
+// it into a slice of ints.
+type IntSliceFlag struct {
+	slice *[]int
+}
+
+func (f IntSliceFlag) String() string {
+	if f.slice == nil {
+		return ""
+	}
+	tmpslice := []string{}
+	for _, v := range *f.slice {
+		tmpslice = append(tmpslice, strconv.Itoa(v))
+	}
+	return strings.Join(tmpslice, ",")
+}
+
+func (f IntSliceFlag) Set(value string) error {
+	ints := []int{}
+	for _, v := range strings.Split(value, ",") {
+		if i, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			ints = append(ints, i)
+		} else {
+			return fmt.Errorf("Unable to parse %s as int.", v)
+		}
+	}
+	*f.slice = ints
 	return nil
 }
 
@@ -158,12 +191,13 @@ func (f robotsFlag) Set(value string) error {
 // Constructs a ScanSettings struct with all of the defaults to be used.
 func NewScanSettings() *ScanSettings {
 	settings := &ScanSettings{
-		Threads:    runtime.NumCPU(),
-		Extensions: []string{"html", "php", "asp", "aspx"},
-		Mangle:     true,
-		QueueSize:  1024,
-		Timeout:    30 * time.Second,
-		LogLevel:   "WARNING",
+		Threads:     runtime.NumCPU(),
+		Extensions:  []string{"html", "php", "asp", "aspx"},
+		Mangle:      true,
+		QueueSize:   1024,
+		Timeout:     30 * time.Second,
+		LogLevel:    "WARNING",
+		SpiderCodes: []int{200},
 	}
 	settings.InitFlags()
 	return settings
@@ -216,6 +250,8 @@ func (settings *ScanSettings) InitFlags() {
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
 	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings, ", "))
 	robotsModeVar := robotsFlag{&settings.RobotsMode}
+	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
+	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
 	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
 
 	settings.flagsSet = true
