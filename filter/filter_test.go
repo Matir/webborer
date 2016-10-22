@@ -34,7 +34,7 @@ func TestFilterDuplicates(t *testing.T) {
 	filter := NewWorkFilter(&settings.ScanSettings{}, dupefunc)
 	fmt.Println("Starting filtering...")
 	close(src)
-	out := filter.Filter(src)
+	out := filter.RunFilter(src)
 	for _, p := range []string{"/a", "/b", "/c"} {
 		if u, ok := <-out; ok {
 			if u.Path != p {
