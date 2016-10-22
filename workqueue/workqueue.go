@@ -18,6 +18,7 @@ import (
 	"github.com/Matir/gobuster/client"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/robots"
+	"github.com/Matir/gobuster/util"
 	"net/url"
 	"sync"
 )
@@ -55,11 +56,11 @@ type QueueAddFunc func(...*url.URL)
 type QueueAddCount func(int)
 type QueueDoneFunc func(int)
 
-func NewWorkQueue(queueSize int, filter func(*url.URL) bool) *WorkQueue {
+func NewWorkQueue(queueSize int, scope []*url.URL, allowUpgrades bool) *WorkQueue {
 	q := &WorkQueue{
 		src:     make(chan *url.URL, queueSize),
 		dst:     make(chan *url.URL, queueSize),
-		filter:  filter,
+		filter:  makeScopeFunc(scope, allowUpgrades),
 		started: make(chan bool, 1),
 	}
 	q.ctr.L = &sync.Mutex{}
@@ -208,4 +209,28 @@ func (q *WorkQueue) peek() *url.URL {
 		return q.head.data
 	}
 	return nil
+}
+
+// Build a function to check if the target URL is in scope.
+func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
+	allowedScopes := make([]*url.URL, len(scope))
+	copy(allowedScopes, scope)
+	if allowUpgrades {
+		for _, scopeURL := range scope {
+			if scopeURL.Scheme == "http" {
+				deref := *scopeURL
+				clone := &deref // Can't find a way to do this in one statement
+				clone.Scheme = "https"
+				allowedScopes = append(allowedScopes, clone)
+			}
+		}
+	}
+	return func(target *url.URL) bool {
+		for _, scopeURL := range scope {
+			if util.URLIsSubpath(scopeURL, target) {
+				return true
+			}
+		}
+		return false
+	}
 }

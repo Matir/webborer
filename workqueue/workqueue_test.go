@@ -23,7 +23,8 @@ import (
 func TestWorkqueueBasic(t *testing.T) {
 	filter := func(_ *url.URL) bool { return true }
 
-	queue := NewWorkQueue(5, filter)
+	queue := NewWorkQueue(5, nil, false)
+	queue.filter = filter
 	queue.RunInBackground()
 	fmt.Println("Adding tasks...")
 	for i := 0; i < 20; i++ {
