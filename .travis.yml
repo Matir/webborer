@@ -1,1 +1,5 @@
 language: go
+
+install:
+  - git clone http://h12.me/socks /home/travis/gopath/src/h12.me/socks
+  - go get -t -v ./...
