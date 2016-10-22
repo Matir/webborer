@@ -86,42 +86,49 @@ func (q *WorkQueue) Run() {
 	defer close(q.dst)
 
 	q.started <- true
-	for true {
-		if q.head != nil {
-			// If we have work to send, non-blocking read
-			select {
-			case u, ok := <-q.src:
-				if !ok {
-					for q.head != nil {
-						q.dst <- q.pop()
-					}
-					return
-				}
-				if q.filter(u) {
-					q.push(u)
-				} else {
-					q.reject(u)
-				}
-			case q.dst <- q.peek():
-				q.pop()
-			}
-		} else {
-			// Blocking read and non-blocking send
-			u, ok := <-q.src
+	keepGoing := true
+	for keepGoing {
+		keepGoing = q.runStep()
+	}
+}
+
+// Run a single step of the queue, returning true if we should continue
+func (q *WorkQueue) runStep() bool {
+	if q.head != nil {
+		// If we have work to send, non-blocking read
+		select {
+		case u, ok := <-q.src:
 			if !ok {
-				return
+				for q.head != nil {
+					q.dst <- q.pop()
+				}
+				return false
 			}
-			if !q.filter(u) {
-				q.reject(u)
-				continue
-			}
-			select {
-			case q.dst <- u:
-			default:
+			if q.filter(u) {
 				q.push(u)
+			} else {
+				q.reject(u)
 			}
+		case q.dst <- q.peek():
+			q.pop()
+		}
+	} else {
+		// Blocking read and non-blocking send
+		u, ok := <-q.src
+		if !ok {
+			return false
+		}
+		if !q.filter(u) {
+			q.reject(u)
+			return true
+		}
+		select {
+		case q.dst <- u:
+		default:
+			q.push(u)
 		}
 	}
+	return true
 }
 
 func (q *WorkQueue) RunInBackground() {
