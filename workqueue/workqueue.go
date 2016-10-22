@@ -209,39 +209,3 @@ func (q *WorkQueue) peek() *url.URL {
 	}
 	return nil
 }
-
-// Count work to do and work done
-type WorkCounter struct {
-	todo int64
-	done int64
-	sync.Mutex
-	sync.Cond
-}
-
-func (ctr *WorkCounter) Add(todo int64) {
-	ctr.Lock()
-	defer ctr.Unlock()
-	ctr.todo += todo
-	ctr.Stats()
-}
-
-func (ctr *WorkCounter) Done(done int64) {
-	ctr.Lock()
-	defer ctr.Unlock()
-	ctr.done += done
-	ctr.Stats()
-	if ctr.done > ctr.todo {
-		panic("Done exceeded todo in WorkCounter!")
-	}
-	if ctr.done == ctr.todo {
-		// Mark done
-		logging.Logf(logging.LogInfo, "Work counter thinks we're done.")
-		ctr.L.Lock()
-		defer ctr.L.Unlock()
-		ctr.Broadcast()
-	}
-}
-
-func (ctr *WorkCounter) Stats() {
-	logging.Logf(logging.LogDebug, "WorkCounter: %d/%d", ctr.done, ctr.todo)
-}
