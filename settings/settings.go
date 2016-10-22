@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/Matir/gobuster/logging"
+	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -308,6 +309,23 @@ func (settings *ScanSettings) String() string {
 	})
 
 	return strings.Join(flags, " ")
+}
+
+// Convert BaseURL strings to URLs
+func (settings *ScanSettings) GetScopes() ([]*url.URL, error) {
+	scopes := make([]*url.URL, len(settings.BaseURLs))
+	for i, baseURL := range settings.BaseURLs {
+		parsed, err := url.Parse(baseURL)
+		scopes[i] = parsed
+		if err != nil {
+			return nil, fmt.Errorf("Unable to parse BaseURL (%s): %s", baseURL, err.Error())
+		}
+		if scopes[i].Path == "" {
+			scopes[i].Path = "/"
+		}
+		logging.Logf(logging.LogDebug, "Added BaseURL: %s", scopes[i].String())
+	}
+	return scopes, nil
 }
 
 // Init output formats

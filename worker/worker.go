@@ -218,15 +218,11 @@ func StartWorkers(settings *ss.ScanSettings,
 	for i := 0; i < count; i++ {
 		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
+		if settings.ParseHTML {
+			workers[i].SetPageWorker(NewHTMLWorker(adder))
+		}
 	}
 	return workers
-}
-
-// Set PageWorker for a bunch of Workers
-func SetPageWorkers(batch []*Worker, pw PageWorker) {
-	for _, w := range batch {
-		w.SetPageWorker(pw)
-	}
 }
 
 // Mangle a basename

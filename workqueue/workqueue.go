@@ -15,7 +15,9 @@
 package workqueue
 
 import (
+	"github.com/Matir/gobuster/client"
 	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/gobuster/robots"
 	"net/url"
 	"sync"
 )
@@ -150,6 +152,22 @@ func (q *WorkQueue) GetAddCount() QueueAddCount {
 func (q *WorkQueue) GetDoneFunc() QueueDoneFunc {
 	return func(c int) {
 		q.ctr.Done(int64(c))
+	}
+}
+
+func (q *WorkQueue) SeedFromRobots(scope []*url.URL, clientFactory client.ClientFactory) {
+	for _, scopeURL := range scope {
+		robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, path := range robotsData.GetAllPaths() {
+				pathURL := *scopeURL
+				pathURL.Path = path
+				// Filter will handle if this is out of scope
+				q.AddURLs(scopeURL.ResolveReference(&pathURL))
+			}
+		}
 	}
 }
 

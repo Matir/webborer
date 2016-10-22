@@ -19,7 +19,6 @@ import (
 	"github.com/Matir/gobuster/filter"
 	"github.com/Matir/gobuster/logging"
 	"github.com/Matir/gobuster/results"
-	"github.com/Matir/gobuster/robots"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/wordlist"
@@ -60,17 +59,10 @@ func main() {
 	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout, settings.UserAgent)
 
 	// Starting point
-	scope := make([]*url.URL, len(settings.BaseURLs))
-	for i, baseURL := range settings.BaseURLs {
-		scope[i], err = url.Parse(baseURL)
-		if err != nil {
-			logging.Logf(logging.LogFatal, "Unable to parse BaseURL (%s): %s", baseURL, err.Error())
-			return
-		}
-		if scope[i].Path == "" {
-			scope[i].Path = "/"
-		}
-		logging.Logf(logging.LogDebug, "Added BaseURL: %s", scope[i].String())
+	scope, err := settings.GetScopes()
+	if err != nil {
+		logging.Logf(logging.LogFatal, err.Error())
+		return
 	}
 
 	// Setup the main workqueue
@@ -82,25 +74,13 @@ func main() {
 	expander := filter.Expander{Wordlist: &words, Adder: queue.GetAddCount()}
 	expander.ProcessWordlist()
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
-	work := filter.Filter(expander.Expand(queue.GetWorkChan()))
 
 	// Check robots mode
 	if settings.RobotsMode == ss.ObeyRobots {
-		for _, scopeURL := range scope {
-			logging.Logf(logging.LogDebug, "Getting robots.txt exclusions for %s", scopeURL)
-			robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
-			if err != nil {
-				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
-			} else {
-				for _, disallowed := range robotsData.GetForUserAgent(settings.UserAgent) {
-					disallowedURL := *scopeURL
-					disallowedURL.Path = disallowed
-					logging.Logf(logging.LogDebug, "Disallowing URL by robots: %s", &disallowedURL)
-					filter.FilterURL(&disallowedURL)
-				}
-			}
-		}
+		filter.AddRobotsFilter(scope, clientFactory)
 	}
+
+	work := filter.RunFilter(expander.Expand(queue.GetWorkChan()))
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
 	rchan := make(chan results.Result, settings.QueueSize)
@@ -111,36 +91,18 @@ func main() {
 	}
 
 	logging.Logf(logging.LogDebug, "Starting %d workers...", settings.Workers)
-	workers := worker.StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
-	if settings.ParseHTML {
-		htmlWorker := worker.NewHTMLWorker(queue.GetAddFunc())
-		worker.SetPageWorkers(workers, htmlWorker)
-	}
+	worker.StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
 
 	logging.Logf(logging.LogDebug, "Starting results manager...")
 	resultsManager.Run(rchan)
 
 	// Kick things off with the seed URL
-	for _, scopeURL := range scope {
-		logging.Logf(logging.LogDebug, "Adding starting URL: %s", scopeURL)
-		queue.AddURLs(scopeURL)
-	}
+	logging.Logf(logging.LogDebug, "Adding starting URLs: %v", scope)
+	queue.AddURLs(scope...)
 
 	// Potentially seed from robots
 	if settings.RobotsMode == ss.SeedRobots {
-		for _, scopeURL := range scope {
-			robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
-			if err != nil {
-				logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
-			} else {
-				for _, path := range robotsData.GetAllPaths() {
-					pathURL := *scopeURL
-					pathURL.Path = path
-					// Filter will handle if this is out of scope
-					queue.AddURLs(scopeURL.ResolveReference(&pathURL))
-				}
-			}
-		}
+		queue.SeedFromRobots(scope, clientFactory)
 	}
 
 	// Wait for work to be done

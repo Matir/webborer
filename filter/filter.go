@@ -15,7 +15,9 @@
 package filter
 
 import (
+	"github.com/Matir/gobuster/client"
 	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/gobuster/robots"
 	ss "github.com/Matir/gobuster/settings"
 	"github.com/Matir/gobuster/util"
 	"github.com/Matir/gobuster/workqueue"
@@ -47,7 +49,8 @@ func NewWorkFilter(settings *ss.ScanSettings, counter workqueue.QueueDoneFunc) *
 	return wf
 }
 
-func (f *WorkFilter) Filter(src <-chan *url.URL) <-chan *url.URL {
+// Apply a filter to a channel of URLs.  Runs asynchronously.
+func (f *WorkFilter) RunFilter(src <-chan *url.URL) <-chan *url.URL {
 	c := make(chan *url.URL, f.settings.QueueSize)
 	go func() {
 	taskLoop:
@@ -76,7 +79,25 @@ func (f *WorkFilter) FilterURL(u *url.URL) {
 	f.exclusions = append(f.exclusions, u)
 }
 
-// Task that can't be used
+// Filter data from robots.txt
+func (f *WorkFilter) AddRobotsFilter(scope []*url.URL, clientFactory client.ClientFactory) {
+	for _, scopeURL := range scope {
+		logging.Logf(logging.LogDebug, "Getting robots.txt exclusions for %s", scopeURL)
+		robotsData, err := robots.GetRobotsForURL(scopeURL, clientFactory)
+		if err != nil {
+			logging.Logf(logging.LogWarning, "Unable to get robots.txt data: %s", err)
+		} else {
+			for _, disallowed := range robotsData.GetForUserAgent(f.settings.UserAgent) {
+				disallowedURL := *scopeURL
+				disallowedURL.Path = disallowed
+				logging.Logf(logging.LogDebug, "Disallowing URL by robots: %s", &disallowedURL)
+				f.FilterURL(&disallowedURL)
+			}
+		}
+	}
+}
+
+// Task that can't be used, but should be counted as terminated.
 func (f *WorkFilter) reject(u *url.URL, reason string) {
 	logging.Logf(logging.LogDebug, "Filter rejected %s: %s.", u.String(), reason)
 	f.counter(1)
