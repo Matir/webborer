@@ -15,8 +15,11 @@ GoBuster is a directory-enumeration tool written in Go and targeting CLI usage.
 
 Please see the CONTRIBUTING file in this directory.
 
+[![Build Status](https://travis-ci.org/Matir/gobuster.svg?branch=master)](https://travis-ci.org/Matir/gobuster)
+[![codecov](https://codecov.io/gh/Matir/gobuster/branch/master/graph/badge.svg)](https://codecov.io/gh/Matir/gobuster)
+
 ### Copyright ###
-Copyright 2015 Google Inc.
+Copyright 2015-2016 Google Inc.
 
 GoBuster is not an official Google product (experimental or otherwise), it is
 just code that happens to be owned by Google.
