@@ -1,2 +1,4 @@
 gobuster
 benchmarks
+coverage.txt
+*.swp
