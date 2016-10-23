@@ -130,17 +130,20 @@ func TestURLIsSubpath(t *testing.T) {
 	wildcard, _ := url.Parse("/")
 	parents := []*url.URL{parentAbs, parentRel, parentRoot, wildcard}
 	tests := map[string][]bool{
-		"http://localhost/foo/bar":         {true, true, true, true},
-		"http://localhost/foo/bar/":        {true, true, true, true},
-		"http://localhost/foo/bar/baz":     {true, true, true, true},
-		"http://localhost/foo":             {false, false, true, true},
-		"http://localhost/foo/barn":        {false, false, true, true},
-		"file://localhost/foo/bar":         {false, true, false, true},
-		"https://localhost/foo/bar":        {false, true, false, true},
-		"http://127.0.0.1/foo/bar":         {false, true, false, true},
-		"http://localhost/foo/bar/..":      {false, false, true, true},
-		"http://localhost/foo/baz/../bar/": {true, true, true, true},
-		"http://localhost/bar":             {false, false, true, true},
+		"http://localhost/foo/bar":             {true, true, true, true},
+		"http://localhost/foo/bar/":            {true, true, true, true},
+		"http://localhost/foo/bar/baz":         {true, true, true, true},
+		"http://localhost/foo":                 {false, false, true, true},
+		"http://localhost/foo/barn":            {false, false, true, true},
+		"file://localhost/foo/bar":             {false, true, false, true},
+		"https://localhost/foo/bar":            {false, true, false, true},
+		"http://127.0.0.1/foo/bar":             {false, true, false, true},
+		"http://localhost/foo/bar/..":          {false, false, true, true},
+		"http://localhost/foo/baz/../bar/":     {true, true, true, true},
+		"http://localhost/bar":                 {false, false, true, true},
+		"http://localhost/bar/baz/bang/longer": {false, false, true, true},
+		"/foo/bar/baz":                         {false, true, false, true},
+		"/foo":                                 {false, false, false, true},
 	}
 	for i, parent := range parents {
 		for child, expects := range tests {
