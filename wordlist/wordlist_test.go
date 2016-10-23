@@ -35,3 +35,35 @@ func TestLoadBuiltinWordlist(t *testing.T) {
 		t.Errorf("Expect nil wordlist for non-existent request.")
 	}
 }
+
+func TestLoadWordlist_File(t *testing.T) {
+	if wl, err := LoadWordlist("testdata/testwl"); err != nil {
+		t.Errorf("Expected no error loading wordlist, got: %v", err)
+	} else if wl == nil {
+		t.Errorf("Expected wordlist on return, got nil.")
+	} else if len(wl) != 3 {
+		t.Errorf("Expected 3 items in wordlist, got %d", len(wl))
+	}
+}
+
+func TestLoadWordlist_Fail(t *testing.T) {
+	if wl, err := LoadWordlist("this-doesnt-exist.txt"); wl != nil {
+		t.Errorf("Expected nil response for non-existent wordlist.")
+	} else if err == nil {
+		t.Errorf("Expected non-nil error for non-existent wordlist.")
+	}
+}
+
+func TestLoadWordlist_Default(t *testing.T) {
+	if wl, err := LoadWordlist(""); err != nil {
+		t.Errorf("Expected no error loading wordlist, got: %v", err)
+	} else if wl == nil {
+		t.Errorf("Expected wordlist on return, got nil.")
+	}
+	// Explicit version
+	if wl, err := LoadWordlist("default"); err != nil {
+		t.Errorf("Expected no error loading wordlist, got: %v", err)
+	} else if wl == nil {
+		t.Errorf("Expected wordlist on return, got nil.")
+	}
+}
