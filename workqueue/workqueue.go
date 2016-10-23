@@ -233,7 +233,7 @@ func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
 		}
 	}
 	return func(target *url.URL) bool {
-		for _, scopeURL := range scope {
+		for _, scopeURL := range allowedScopes {
 			if util.URLIsSubpath(scopeURL, target) {
 				return true
 			}
