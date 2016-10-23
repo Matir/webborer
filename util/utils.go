@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"path"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"syscall"
 )
@@ -132,4 +133,23 @@ func getParentPathsString(childPath string) []string {
 		results = append(results, strings.Join(splitPath[:i], "/"))
 	}
 	return results
+}
+
+// Debug profiling support
+func EnableCPUProfiling() {
+	if profFile, err := os.Create("gobuster.prof"); err != nil {
+		logging.Logf(logging.LogError, "Unable to open gobuster.prof for profiling: %v", err)
+	} else {
+		pprof.StartCPUProfile(profFile)
+		sigintChan := make(chan os.Signal, 1)
+		signal.Notify(sigintChan, os.Interrupt)
+		// Gracefully handle Ctrl+C when profiling.
+		go func() {
+			for range sigintChan {
+				logging.Logf(logging.LogWarning, "Stopping profiling...")
+				pprof.StopCPUProfile()
+				os.Exit(0)
+			}
+		}()
+	}
 }

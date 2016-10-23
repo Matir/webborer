@@ -73,6 +73,8 @@ type ScanSettings struct {
 	AllowHTTPSUpgrade bool
 	// Spider which http response codes
 	SpiderCodes []int
+	// Whether or not to do CPU Profiling
+	DebugCPUProf bool
 	// Config file used when loading (for debugging only)
 	configPath string
 	// Have flags been set up?
@@ -257,6 +259,9 @@ func (settings *ScanSettings) InitFlags() {
 	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
 	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
 	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
+
+	// Debugging flags
+	flag.BoolVar(&settings.DebugCPUProf, "debug-cpuprof", false, "[DEBUG] CPU Profiling")
 
 	settings.flagsSet = true
 }

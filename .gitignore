@@ -2,3 +2,4 @@ gobuster
 benchmarks
 coverage.txt
 *.swp
+gobuster.prof
