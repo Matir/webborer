@@ -136,20 +136,24 @@ func getParentPathsString(childPath string) []string {
 }
 
 // Debug profiling support
-func EnableCPUProfiling() {
+func EnableCPUProfiling() func() {
 	if profFile, err := os.Create("gobuster.prof"); err != nil {
 		logging.Logf(logging.LogError, "Unable to open gobuster.prof for profiling: %v", err)
 	} else {
 		pprof.StartCPUProfile(profFile)
 		sigintChan := make(chan os.Signal, 1)
 		signal.Notify(sigintChan, os.Interrupt)
+		cancelFunc := func() {
+			logging.Logf(logging.LogWarning, "Stopping profiling...")
+			pprof.StopCPUProfile()
+			signal.Stop(sigintChan)
+		}
 		// Gracefully handle Ctrl+C when profiling.
 		go func() {
-			for range sigintChan {
-				logging.Logf(logging.LogWarning, "Stopping profiling...")
-				pprof.StopCPUProfile()
-				os.Exit(0)
-			}
+			<-sigintChan
+			cancelFunc()
 		}()
+		return cancelFunc
 	}
+	return nil
 }

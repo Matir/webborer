@@ -209,3 +209,8 @@ func TestEnableStackTraces(t *testing.T) {
 	DumpStackTrace()
 	cancel()
 }
+
+func TestEnableCPUProfiling(t *testing.T) {
+	cancel := EnableCPUProfiling()
+	cancel()
+}

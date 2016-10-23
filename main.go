@@ -25,7 +25,6 @@ import (
 	"github.com/Matir/gobuster/worker"
 	"github.com/Matir/gobuster/workqueue"
 	"runtime"
-	"runtime/pprof"
 )
 
 // This is the main runner for gobuster.
@@ -43,8 +42,9 @@ func main() {
 	logging.Logf(logging.LogInfo, "Flags: %s", settings)
 
 	// Enable CPU profiling
+	var cpuProfStop func()
 	if settings.DebugCPUProf {
-		util.EnableCPUProfiling()
+		cpuProfStop = util.EnableCPUProfiling()
 	}
 
 	// Set number of threads
@@ -120,8 +120,8 @@ func main() {
 	close(rchan)
 
 	resultsManager.Wait()
-	if settings.DebugCPUProf {
-		pprof.StopCPUProfile()
+	if cpuProfStop != nil {
+		cpuProfStop()
 	}
 	logging.Logf(logging.LogDebug, "Done!")
 }
