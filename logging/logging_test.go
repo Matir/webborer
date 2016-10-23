@@ -23,3 +23,14 @@ func TestLogLevelStrings(t *testing.T) {
 		t.Errorf("Incorrect log level strings: %d != %d.", len(LogLevelStrings), logLevelMax)
 	}
 }
+
+func TestResetLog(_ *testing.T) {
+	// No-op
+	ResetLog("", "")
+	// Set both
+	ResetLog("/dev/stderr", "WARNING")
+}
+
+func TestLogf(_ *testing.T) {
+	Logf(LogDebug, "Test Logf.")
+}
