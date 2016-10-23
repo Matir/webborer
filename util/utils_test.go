@@ -206,5 +206,6 @@ func TestGetParentPathsString(t *testing.T) {
 func TestEnableStackTraces(t *testing.T) {
 	// Really we just see that we don't panic
 	cancel := EnableStackTraces()
+	DumpStackTrace()
 	cancel()
 }

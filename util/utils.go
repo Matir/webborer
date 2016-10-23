@@ -28,6 +28,8 @@ import (
 var slash = byte('/')
 var dot = byte('.')
 
+var StackDumpSignal = syscall.SIGQUIT
+
 func URLIsDir(u *url.URL) bool {
 	l := len(u.Path)
 	if l == 0 {
@@ -50,17 +52,21 @@ func StatusCodeGroup(code int) int {
 func EnableStackTraces() func() {
 	sigs := make(chan os.Signal, 1)
 	go func() {
-		signal.Notify(sigs, syscall.SIGQUIT)
-		buf := make([]byte, 1<<20)
+		signal.Notify(sigs, StackDumpSignal)
 		for range sigs {
-			runtime.Stack(buf, true)
-			logging.Logf(logging.LogDebug, "=== received SIGQUIT ===\n*** goroutine dump...\n%s\n*** end\n", buf)
+			DumpStackTrace()
 		}
 	}()
 	return func() {
 		signal.Stop(sigs)
 		close(sigs)
 	}
+}
+
+func DumpStackTrace() {
+	buf := make([]byte, 1<<20)
+	runtime.Stack(buf, true)
+	logging.Logf(logging.LogDebug, "=== received SIGQUIT ===\n*** goroutine dump...\n%s\n*** end\n", buf)
 }
 
 // Deduplicate a slice of strings
