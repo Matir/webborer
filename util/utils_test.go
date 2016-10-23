@@ -202,3 +202,9 @@ func TestGetParentPathsString(t *testing.T) {
 		t.Errorf("%v != %v", expectedB, resultsB)
 	}
 }
+
+func TestEnableStackTraces(t *testing.T) {
+	// Really we just see that we don't panic
+	cancel := EnableStackTraces()
+	cancel()
+}

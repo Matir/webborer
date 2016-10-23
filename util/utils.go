@@ -46,17 +46,21 @@ func StatusCodeGroup(code int) int {
 }
 
 // Enable stack traces on SIGQUIT
-func EnableStackTraces() {
+// Returns a function that can be used to disable stack traces.
+func EnableStackTraces() func() {
+	sigs := make(chan os.Signal, 1)
 	go func() {
-		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGQUIT)
 		buf := make([]byte, 1<<20)
-		for {
-			<-sigs
+		for range sigs {
 			runtime.Stack(buf, true)
 			logging.Logf(logging.LogDebug, "=== received SIGQUIT ===\n*** goroutine dump...\n%s\n*** end\n", buf)
 		}
 	}()
+	return func() {
+		signal.Stop(sigs)
+		close(sigs)
+	}
 }
 
 // Deduplicate a slice of strings
