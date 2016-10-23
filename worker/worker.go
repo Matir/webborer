@@ -43,7 +43,7 @@ type PageWorker interface {
 // will be used due to network latency.
 type Worker struct {
 	// client for connections
-	client *client.Client
+	client client.Client
 	// Channel for URLs to scan
 	src <-chan *url.URL
 	// Function to add future work
@@ -84,7 +84,7 @@ func NewWorker(settings *ss.ScanSettings,
 		w.redir = req
 		return fmt.Errorf("Stop redirect.")
 	}
-	w.client.CheckRedirect = redirHandler
+	w.client.SetCheckRedirect(redirHandler)
 
 	return w
 }

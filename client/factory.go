@@ -33,7 +33,7 @@ var proxyTypeMap = map[string]int{
 // A ClientFactory allows constructing HTTP Clients based on various Dialers or
 // Transports.
 type ClientFactory interface {
-	Get() *Client
+	Get() Client
 }
 
 // ProxyClientFactory uses the h12.me/socks package to support SOCKS proxies
@@ -66,9 +66,9 @@ func NewProxyClientFactory(proxies []string, timeout time.Duration, agent string
 	return factory
 }
 
-func (factory *ProxyClientFactory) Get() *Client {
+func (factory *ProxyClientFactory) Get() Client {
 	if len(factory.proxyURLs) == 0 {
-		return &Client{Client: http.Client{Timeout: factory.timeout}, UserAgent: factory.userAgent}
+		return &httpClient{Client: http.Client{Timeout: factory.timeout}, UserAgent: factory.userAgent}
 	}
 	if len(factory.proxyURLs) == 1 {
 		return clientForProxy(factory.proxyURLs[0], factory.timeout, factory.userAgent)
@@ -77,10 +77,10 @@ func (factory *ProxyClientFactory) Get() *Client {
 	return clientForProxy(proxy, factory.timeout, factory.userAgent)
 }
 
-func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) *Client {
+func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) Client {
 	proto := proxyTypeMap[proxy.Scheme]
 	dialer := socks.DialSocksProxy(proto, proxy.Host)
-	cl := &Client{
+	cl := &httpClient{
 		Client: http.Client{
 			Transport: &http.Transport{
 				Dial: dialer,

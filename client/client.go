@@ -19,19 +19,28 @@ import (
 	"net/url"
 )
 
-type Client struct {
+type Client interface {
+	RequestURL(*url.URL) (*http.Response, error)
+	SetCheckRedirect(func(*http.Request, []*http.Request) error)
+}
+
+type httpClient struct {
 	http.Client
 	UserAgent string
 }
 
-func (c *Client) RequestURL(u *url.URL) (*http.Response, error) {
-	req := c.MakeRequest(u)
+func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
+	req := c.makeRequest(u)
 	return c.Do(req)
 }
 
-func (c *Client) MakeRequest(u *url.URL) *http.Request {
+func (c *httpClient) makeRequest(u *url.URL) *http.Request {
 	// TODO: support other methods
 	req, _ := http.NewRequest("GET", u.String(), nil)
 	req.Header.Set("User-Agent", c.UserAgent)
 	return req
+}
+
+func (c *httpClient) SetCheckRedirect(checker func(*http.Request, []*http.Request) error) {
+	c.CheckRedirect = checker
 }
