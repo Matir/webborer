@@ -27,6 +27,7 @@ const (
 	LogWarning
 	LogError
 	LogFatal
+	logLevelMax
 )
 
 var LogLevelStrings = [...]string{

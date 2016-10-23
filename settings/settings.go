@@ -84,9 +84,10 @@ const (
 	IgnoreRobots = iota
 	ObeyRobots
 	SeedRobots
+	robotsModeMax
 )
 
-var robotsModeStrings = []string{
+var robotsModeStrings = [...]string{
 	"ignore",
 	"obey",
 	"seed",
@@ -242,14 +243,16 @@ func (settings *ScanSettings) InitFlags() {
 	flag.Var(proxyValue, "proxy", "Proxy or `proxies` to use.")
 	timeoutValue := DurationFlag{&settings.Timeout}
 	flag.Var(timeoutValue, "timeout", "Network connection timeout (`duration`).")
-	formatHelp := fmt.Sprintf("Output `format`.  Options: [%s]", strings.Join(outputFormats, ", "))
-	flag.StringVar(&settings.OutputFormat, "format", outputFormats[0], formatHelp)
+	if len(outputFormats) > 1 {
+		formatHelp := fmt.Sprintf("Output `format`.  Options: [%s]", strings.Join(outputFormats, ", "))
+		flag.StringVar(&settings.OutputFormat, "format", outputFormats[0], formatHelp)
+	}
 	flag.StringVar(&settings.OutputPath, "outfile", "", "Output `file`, defaults to stdout.")
 	loglevelHelp := fmt.Sprintf("Log `level`.  Options: [%s]", strings.Join(logging.LogLevelStrings[:], ", "))
 	flag.StringVar(&settings.LogLevel, "loglevel", settings.LogLevel, loglevelHelp)
 	flag.StringVar(&settings.UserAgent, "user-agent", DefaultUserAgent, "`User-Agent` for requests")
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
-	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings, ", "))
+	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings[:], ", "))
 	robotsModeVar := robotsFlag{&settings.RobotsMode}
 	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
 	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
