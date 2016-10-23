@@ -46,7 +46,6 @@ func StatusCodeGroup(code int) int {
 }
 
 // Enable stack traces on SIGQUIT
-// Thanks to:
 func EnableStackTraces() {
 	go func() {
 		sigs := make(chan os.Signal, 1)

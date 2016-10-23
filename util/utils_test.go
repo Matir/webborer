@@ -140,6 +140,7 @@ func TestURLIsSubpath(t *testing.T) {
 		"http://127.0.0.1/foo/bar":         {false, true, false, true},
 		"http://localhost/foo/bar/..":      {false, false, true, true},
 		"http://localhost/foo/baz/../bar/": {true, true, true, true},
+		"http://localhost/bar":             {false, false, true, true},
 	}
 	for i, parent := range parents {
 		for child, expects := range tests {
@@ -169,7 +170,21 @@ func BenchmarkURLIsSubpath(b *testing.B) {
 	}
 }
 
-func TestGetParentsPathString(t *testing.T) {
+func TestGetParentPaths(t *testing.T) {
+	u := url.URL{Path: "/a/b/c"}
+	res := GetParentPaths(&u)
+	expected := []string{"/a", "/a/b"}
+	if len(res) != len(expected) {
+		t.Fatalf("Length of results not expected.")
+	}
+	for i, exp := range expected {
+		if res[i].Path != exp {
+			t.Errorf("Expected path %s, got %s.", exp, res[i])
+		}
+	}
+}
+
+func TestGetParentPathsString(t *testing.T) {
 	pathA := "/abc/def/ghi/jkl.txt"
 	expectedA := []string{"/abc", "/abc/def", "/abc/def/ghi"}
 	resultsA := getParentPathsString(pathA)
