@@ -61,7 +61,11 @@ func main() {
 
 	// Build an HTTP Client Factory
 	logging.Logf(logging.LogDebug, "Creating Client Factory...")
-	clientFactory := client.NewProxyClientFactory(settings.Proxies, settings.Timeout, settings.UserAgent)
+	clientFactory, err := client.NewProxyClientFactory(settings.Proxies, settings.Timeout, settings.UserAgent)
+	if err != nil {
+		logging.Logf(logging.LogFatal, "Unable to build client factory: %s", err.Error())
+		return
+	}
 
 	// Starting point
 	scope, err := settings.GetScopes()

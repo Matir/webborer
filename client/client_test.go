@@ -15,6 +15,7 @@
 package client
 
 import (
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -26,4 +27,9 @@ func TestMakeRequest_Basic(t *testing.T) {
 	if req.URL.String() != u.String() {
 		t.Errorf("URL does not match requested: %s != %s", req.URL.String(), u.String())
 	}
+}
+
+func TestSetCheckRedirect(_ *testing.T) {
+	c := &httpClient{}
+	c.SetCheckRedirect(func(_ *http.Request, _ []*http.Request) error { return nil })
 }

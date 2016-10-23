@@ -15,6 +15,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/Matir/gobuster/logging"
 	"h12.me/socks"
 	"math/rand"
@@ -45,25 +46,25 @@ type ProxyClientFactory struct {
 }
 
 // Create a ProxyClientFactory for the provided list of proxies.
-func NewProxyClientFactory(proxies []string, timeout time.Duration, agent string) *ProxyClientFactory {
+func NewProxyClientFactory(proxies []string, timeout time.Duration, agent string) (*ProxyClientFactory, error) {
 	factory := &ProxyClientFactory{timeout: timeout, userAgent: agent}
 	for _, proxy := range proxies {
 		u, err := url.Parse(proxy)
 		if err != nil {
 			logging.Logf(logging.LogWarning, "Unable to parse proxy: %s", proxy)
-			continue
+			return nil, err
 		}
 		if _, ok := proxyTypeMap[u.Scheme]; !ok {
 			logging.Logf(logging.LogWarning, "Invalid proxy protocol: %s", u.Scheme)
-			continue
+			return nil, fmt.Errorf("Invalid proxy protocol: %s", u.Scheme)
 		}
 		if u.Host == "" {
 			logging.Logf(logging.LogWarning, "Missing host for proxy: %s", proxy)
-			continue
+			return nil, fmt.Errorf("Missing host for proxy: %s", proxy)
 		}
 		factory.proxyURLs = append(factory.proxyURLs, u)
 	}
-	return factory
+	return factory, nil
 }
 
 func (factory *ProxyClientFactory) Get() Client {
