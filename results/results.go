@@ -17,9 +17,7 @@ package results
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/Matir/gobuster/logging"
 	ss "github.com/Matir/gobuster/settings"
-	"html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -53,31 +51,6 @@ type ResultsManager interface {
 
 type baseResultsManager struct {
 	finished chan bool
-}
-
-// PlainResultsManager is designed to output a very basic output that is good
-// for human reading, but not so good for machine parsing.  This is the default
-// output and provides a decent way to review results on-screen.
-type PlainResultsManager struct {
-	baseResultsManager
-	writer io.Writer
-	fp     *os.File
-	redirs bool
-}
-
-// CSVResultsManager writes a CSV containing all of the results.
-type CSVResultsManager struct {
-	baseResultsManager
-	writer *csv.Writer
-	fp     *os.File
-}
-
-// HTMLResultsManager writes an HTML file containing the results.
-type HTMLResultsManager struct {
-	baseResultsManager
-	writer  io.Writer
-	fp      *os.File
-	BaseURL string
 }
 
 // Available output formats as strings.
@@ -141,137 +114,4 @@ func (b *baseResultsManager) done() {
 
 func (b *baseResultsManager) Wait() {
 	<-b.finished
-}
-
-func (rm *PlainResultsManager) Run(res <-chan Result) {
-	go func() {
-		rm.start()
-		defer func() {
-			if rm.fp != nil {
-				rm.fp.Close()
-			}
-			rm.done()
-		}()
-
-		for r := range res {
-			if !ReportResult(r) {
-				continue
-			}
-			if r.Redir == nil {
-				if r.Length >= 0 {
-					fmt.Fprintf(rm.writer, "%d %s (%d bytes)\n", r.Code, r.URL.String(), r.Length)
-				} else {
-					fmt.Fprintf(rm.writer, "%d %s\n", r.Code, r.URL.String())
-				}
-			} else if rm.redirs {
-				fmt.Fprintf(rm.writer, "%d %s -> %s\n", r.Code, r.URL.String(), r.Redir.String())
-			}
-		}
-	}()
-}
-
-func (rm *CSVResultsManager) Run(res <-chan Result) {
-	go func() {
-		rm.start()
-		defer func() {
-			rm.writer.Flush()
-			if rm.fp != nil {
-				rm.fp.Close()
-			}
-			rm.done()
-		}()
-
-		maybeString := func(u *url.URL) string {
-			if u == nil {
-				return ""
-			}
-			return u.String()
-		}
-
-		rm.writer.Write([]string{"code", "url", "content_length", "redirect_url"})
-
-		for r := range res {
-			if !ReportResult(r) {
-				continue
-			}
-			var clen string
-			if r.Length >= 0 {
-				clen = fmt.Sprintf("%d", r.Length)
-			}
-			record := []string{
-				fmt.Sprintf("%d", r.Code),
-				r.URL.String(),
-				clen,
-				maybeString(r.Redir),
-			}
-			rm.writer.Write(record)
-		}
-	}()
-}
-
-func (rm *HTMLResultsManager) Run(res <-chan Result) {
-	go func() {
-		rm.start()
-		rm.writeHeader()
-
-		defer func() {
-			rm.writeFooter()
-			if rm.fp != nil {
-				rm.fp.Close()
-			}
-			rm.done()
-		}()
-
-		for r := range res {
-			if !ReportResult(r) {
-				continue
-			}
-			if r.Redir != nil {
-				continue
-			}
-			rm.writeResult(&r)
-		}
-	}()
-}
-
-func (rm *HTMLResultsManager) writeHeader() {
-	header := `{{define "HEAD"}}<html><head><title>gobuster: {{.BaseURL}}</title></head><h2>Results for <a href="{{.BaseURL}}">{{.BaseURL}}</a></h2><table><tr><th>Code</th><th>URL</th><th>Size</th></tr>{{end}}`
-	t, err := template.New("htmlResultsManager").Parse(header)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
-	}
-	data := struct {
-		BaseURL string
-	}{
-		BaseURL: rm.BaseURL,
-	}
-	err = t.ExecuteTemplate(rm.writer, "HEAD", data)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
-	}
-}
-
-func (rm *HTMLResultsManager) writeFooter() {
-	footer := `{{define "FOOTER"}}</table></html>{{end}}`
-	t, err := template.New("htmlResultsManager").Parse(footer)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
-	}
-	err = t.ExecuteTemplate(rm.writer, "FOOTER", nil)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
-	}
-}
-
-func (rm *HTMLResultsManager) writeResult(res *Result) {
-	// TODO: don't rebuild the template with each row
-	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{if ge .Length 0}}{{.Length}}{{end}}</td></tr>{{end}}`
-	t, err := template.New("htmlResultsManager").Parse(tmpl)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
-	}
-	err = t.ExecuteTemplate(rm.writer, "ROW", res)
-	if err != nil {
-		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
-	}
 }
