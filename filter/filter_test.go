@@ -15,14 +15,13 @@
 package filter
 
 import (
-	"fmt"
+	"github.com/Matir/gobuster/client/mock"
 	"github.com/Matir/gobuster/settings"
 	"net/url"
 	"testing"
 )
 
 func TestFilterDuplicates(t *testing.T) {
-	fmt.Println("Adding tasks...")
 	src := make(chan *url.URL, 5)
 	src <- &url.URL{Path: "/a"}
 	src <- &url.URL{Path: "/b"}
@@ -32,7 +31,6 @@ func TestFilterDuplicates(t *testing.T) {
 	dupes := 0
 	dupefunc := func(i int) { dupes += i }
 	filter := NewWorkFilter(&settings.ScanSettings{}, dupefunc)
-	fmt.Println("Starting filtering...")
 	close(src)
 	out := filter.RunFilter(src)
 	for _, p := range []string{"/a", "/b", "/c"} {
@@ -49,5 +47,51 @@ func TestFilterDuplicates(t *testing.T) {
 	}
 	if dupes != 2 {
 		t.Errorf("Expected 2 dupes, got %d", dupes)
+	}
+}
+
+func TestFilterExclusion(t *testing.T) {
+	src := make(chan *url.URL, 5)
+	src <- &url.URL{Path: "/a"}
+	src <- &url.URL{Path: "/b"}
+	dupefunc := func(_ int) {}
+	ss := &settings.ScanSettings{
+		ExcludePaths: []string{
+			"/a",
+		},
+	}
+	filter := NewWorkFilter(ss, dupefunc)
+	close(src)
+	out := filter.RunFilter(src)
+	if u, ok := <-out; ok {
+		if u.Path != "/b" {
+			t.Errorf("Expected /b, got %v", u)
+		}
+	} else {
+		t.Errorf("Expected output, got closed channel.")
+	}
+	if u, ok := <-out; ok {
+		t.Errorf("Expected closed channel, got %v instead.", u)
+	}
+}
+
+func TestRobotsFilter_Success(t *testing.T) {
+	wf := NewWorkFilter(&settings.ScanSettings{}, func(_ int) {})
+	client := &mock.MockClient{mock.MockRobotsResponse()}
+	cf := &mock.MockClientFactory{client}
+	u, _ := url.Parse("http://localhost/")
+	wf.AddRobotsFilter([]*url.URL{u}, cf)
+	if len(wf.exclusions) != 1 {
+		t.Errorf("Expected one exclusion, got %d", len(wf.exclusions))
+	}
+}
+
+func TestRobotsFilter_Fail(t *testing.T) {
+	wf := NewWorkFilter(&settings.ScanSettings{}, func(_ int) {})
+	cf := &mock.MockClientFactory{}
+	u, _ := url.Parse("http://localhost/")
+	wf.AddRobotsFilter([]*url.URL{u}, cf)
+	if len(wf.exclusions) != 0 {
+		t.Errorf("Expected no exclusions, got %d", len(wf.exclusions))
 	}
 }

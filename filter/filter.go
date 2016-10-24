@@ -43,7 +43,7 @@ func NewWorkFilter(settings *ss.ScanSettings, counter workqueue.QueueDoneFunc) *
 		if u, err := url.Parse(path); err != nil {
 			logging.Logf(logging.LogError, "Unable to parse exclusion path: %s (%s)", path, err.Error())
 		} else {
-			wf.exclusions = append(wf.exclusions, u)
+			wf.FilterURL(u)
 		}
 	}
 	return wf
