@@ -23,11 +23,9 @@ import (
 
 func TestFilterDuplicates(t *testing.T) {
 	src := make(chan *url.URL, 5)
-	src <- &url.URL{Path: "/a"}
-	src <- &url.URL{Path: "/b"}
-	src <- &url.URL{Path: "/a"}
-	src <- &url.URL{Path: "/c"}
-	src <- &url.URL{Path: "/a"}
+	for _, p := range []string{"/a", "/b", "/a", "/c", "/a"} {
+		src <- &url.URL{Path: p}
+	}
 	dupes := 0
 	dupefunc := func(i int) { dupes += i }
 	filter := NewWorkFilter(&settings.ScanSettings{}, dupefunc)
@@ -72,6 +70,18 @@ func TestFilterExclusion(t *testing.T) {
 	}
 	if u, ok := <-out; ok {
 		t.Errorf("Expected closed channel, got %v instead.", u)
+	}
+}
+
+func TestFilterParseFail(t *testing.T) {
+	ss := &settings.ScanSettings{
+		ExcludePaths: []string{
+			"://",
+		},
+	}
+	wf := NewWorkFilter(ss, func(_ int) {})
+	if len(wf.exclusions) != 0 {
+		t.Error("Expected error parsing exclusion, but got none.")
 	}
 }
 
