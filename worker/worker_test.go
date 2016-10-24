@@ -18,6 +18,7 @@ import (
 	"github.com/Matir/gobuster/client/mock"
 	"github.com/Matir/gobuster/results"
 	"github.com/Matir/gobuster/settings"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -36,17 +37,18 @@ func TestNewWorker(t *testing.T) {
 	}
 }
 
-func TestTryURL_Basic(t *testing.T) {
-	resp := mock.ResponseFromString("")
-	resp.StatusCode = 200
-	client := &mock.MockClient{NextResponse: resp}
-	settings := &settings.ScanSettings{
+func TryURLHelper(u *url.URL, resp *http.Response) *Worker {
+	client := &mock.MockClient{}
+	if resp != nil {
+		client.NextResponse = resp
+	}
+	ss := &settings.ScanSettings{
 		SpiderCodes: []int{200},
 	}
 	rchan := make(chan results.Result)
 	w := &Worker{
 		client:   client,
-		settings: settings,
+		settings: ss,
 		rchan:    rchan,
 		adder:    noopUrl,
 	}
@@ -54,8 +56,37 @@ func TestTryURL_Basic(t *testing.T) {
 		for range rchan {
 		}
 	}()
-	url := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	w.TryURL(url)
+	w.TryURL(u)
+	return w
+}
+
+func TestTryURL_Basic(t *testing.T) {
+	resp := mock.ResponseFromString("")
+	resp.StatusCode = 200
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	TryURLHelper(u, resp)
+}
+
+func TestTryURL_Error(t *testing.T) {
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	TryURLHelper(u, nil)
+}
+
+func TestStartWorkers_Single(t *testing.T) {
+	ss := &settings.ScanSettings{
+		Workers: 1,
+	}
+	schan := make(chan *url.URL)
+	rchan := make(chan results.Result)
+	for _, w := range StartWorkers(
+		ss,
+		&mock.MockClientFactory{},
+		schan,
+		noopUrl,
+		noopInt,
+		rchan) {
+		w.Stop()
+	}
 }
 
 func TestMangle(t *testing.T) {
