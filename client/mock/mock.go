@@ -24,10 +24,12 @@ import (
 )
 
 type MockClientFactory struct {
-	NextClient *MockClient
+	ForeverClient *MockClient
+	NextClient    *MockClient
 }
 type MockClient struct {
 	NextResponse *http.Response
+	Requests     []*url.URL
 }
 
 func (f *MockClientFactory) Get() client.Client {
@@ -36,10 +38,14 @@ func (f *MockClientFactory) Get() client.Client {
 		f.NextClient = nil
 		return c
 	}
+	if f.ForeverClient != nil {
+		return f.ForeverClient
+	}
 	return &MockClient{}
 }
 
 func (c *MockClient) RequestURL(u *url.URL) (*http.Response, error) {
+	c.Requests = append(c.Requests, u)
 	if c.NextResponse == nil {
 		return nil, errors.New("No NextResponse for MockClient.")
 	}

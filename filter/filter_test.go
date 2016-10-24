@@ -87,8 +87,8 @@ func TestFilterParseFail(t *testing.T) {
 
 func TestRobotsFilter_Success(t *testing.T) {
 	wf := NewWorkFilter(&settings.ScanSettings{}, func(_ int) {})
-	client := &mock.MockClient{mock.MockRobotsResponse()}
-	cf := &mock.MockClientFactory{client}
+	client := &mock.MockClient{NextResponse: mock.MockRobotsResponse()}
+	cf := &mock.MockClientFactory{NextClient: client}
 	u, _ := url.Parse("http://localhost/")
 	wf.AddRobotsFilter([]*url.URL{u}, cf)
 	if len(wf.exclusions) != 1 {

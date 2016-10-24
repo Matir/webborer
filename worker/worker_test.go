@@ -15,11 +15,48 @@
 package worker
 
 import (
+	"github.com/Matir/gobuster/client/mock"
+	"github.com/Matir/gobuster/results"
+	"github.com/Matir/gobuster/settings"
+	"net/url"
 	"strings"
 	"testing"
 )
 
-// TODO: test the actual workers
+func noopInt(_ int)         {}
+func noopUrl(_ ...*url.URL) {}
+
+func TestNewWorker(t *testing.T) {
+	ss := &settings.ScanSettings{}
+	src := make(chan *url.URL)
+	rchan := make(chan results.Result)
+	worker := NewWorker(ss, &mock.MockClientFactory{}, src, noopUrl, noopInt, rchan)
+	if worker == nil {
+		t.Fatal("Expected to receive a worker, got nil!")
+	}
+}
+
+func TestTryURL_Basic(t *testing.T) {
+	resp := mock.ResponseFromString("")
+	resp.StatusCode = 200
+	client := &mock.MockClient{NextResponse: resp}
+	settings := &settings.ScanSettings{
+		SpiderCodes: []int{200},
+	}
+	rchan := make(chan results.Result)
+	w := &Worker{
+		client:   client,
+		settings: settings,
+		rchan:    rchan,
+		adder:    noopUrl,
+	}
+	go func() {
+		for range rchan {
+		}
+	}()
+	url := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	w.TryURL(url)
+}
 
 func TestMangle(t *testing.T) {
 	foo := "foo"
