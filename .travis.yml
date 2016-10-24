@@ -5,6 +5,7 @@ install:
   - go get -t -v ./...
 
 script:
+  - go test -v ./...
   - bash ./test.sh
 
 after_success:
