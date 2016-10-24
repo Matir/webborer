@@ -16,8 +16,28 @@ package results
 
 import (
 	"github.com/Matir/gobuster/settings"
+	"net/url"
 	"testing"
 )
+
+func makeTestResults() []Result {
+	return []Result{
+		Result{
+			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
+			Code: 200,
+		},
+		Result{
+			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/x"},
+			Code: 404,
+		},
+		Result{
+			URL:   &url.URL{Scheme: "http", Host: "localhost", Path: "/.git"},
+			Code:  301,
+			Redir: &url.URL{Scheme: "https", Host: "localhost", Path: "/.git"},
+		},
+	}
+
+}
 
 func TestGetResultsManager(t *testing.T) {
 	for _, format := range OutputFormats {
@@ -26,4 +46,36 @@ func TestGetResultsManager(t *testing.T) {
 			t.Errorf("Unable to construct %s ResultsManager: %v", format, err)
 		}
 	}
+}
+
+func TestGetResultsManager_Invalid(t *testing.T) {
+	s := &settings.ScanSettings{OutputFormat: "invalid"}
+	if rm, err := GetResultsManager(s); err == nil {
+		t.Error("Expecting error for invalid ResultsManager.")
+	} else if rm != nil {
+		t.Error("Expecting nil ResultsManager for invalid type.")
+	}
+}
+
+func TestFoundSomething(t *testing.T) {
+	if !FoundSomething(200) {
+		t.Error("Expected 200 to be meaningful, but was not.")
+	}
+	if FoundSomething(404) {
+		t.Error("Expected 404 not to be meaningful, but was.")
+	}
+}
+
+func TestReportResult(t *testing.T) {
+	r := Result{Code: 200}
+	if !ReportResult(r) {
+		t.Error("Expected to report a result of 200.")
+	}
+}
+
+func TestBaseFunctions(_ *testing.T) {
+	brm := &baseResultsManager{}
+	brm.start()
+	go brm.done()
+	brm.Wait()
 }

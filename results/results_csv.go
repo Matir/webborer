@@ -39,30 +39,35 @@ func (rm *CSVResultsManager) Run(res <-chan Result) {
 			rm.done()
 		}()
 
-		maybeString := func(u *url.URL) string {
-			if u == nil {
-				return ""
-			}
-			return u.String()
-		}
-
+		// Header line
 		rm.writer.Write([]string{"code", "url", "content_length", "redirect_url"})
 
 		for r := range res {
-			if !ReportResult(r) {
-				continue
-			}
-			var clen string
-			if r.Length >= 0 {
-				clen = fmt.Sprintf("%d", r.Length)
-			}
-			record := []string{
-				fmt.Sprintf("%d", r.Code),
-				r.URL.String(),
-				clen,
-				maybeString(r.Redir),
-			}
-			rm.writer.Write(record)
+			rm.runOne(r)
 		}
 	}()
+}
+
+func (rm *CSVResultsManager) runOne(res Result) {
+	if !ReportResult(res) {
+		return
+	}
+	var clen string
+	if res.Length >= 0 {
+		clen = fmt.Sprintf("%d", res.Length)
+	}
+	record := []string{
+		fmt.Sprintf("%d", res.Code),
+		res.URL.String(),
+		clen,
+		maybeStringURL(res.Redir),
+	}
+	rm.writer.Write(record)
+}
+
+func maybeStringURL(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	return u.String()
 }
