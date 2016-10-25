@@ -28,7 +28,7 @@ var defaultConfigPaths = []string{
 }
 
 func init() {
-	if usr, err := user.Current(); err != nil {
+	if usr, err := user.Current(); err == nil {
 		path := filepath.Join(usr.HomeDir, ".config", "gobuster.conf")
 		defaultConfigPaths = append([]string{path}, defaultConfigPaths...)
 	}
