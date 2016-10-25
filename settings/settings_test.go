@@ -158,3 +158,40 @@ func TestRobotsFlag_Set_Invalid(t *testing.T) {
 		t.Errorf("Expected flag unchanged during error, got %d.", i)
 	}
 }
+
+func TestScanSettings_String(t *testing.T) {
+	ss := &ScanSettings{}
+	if len(ss.String()) == 0 {
+		t.Error("Expected string response, got nothing.")
+	}
+}
+
+func TestScanSettings_GetScopes_Success(t *testing.T) {
+	ss := &ScanSettings{
+		BaseURLs: []string{"http://localhost/", "https://example.org"},
+	}
+	if scopes, err := ss.GetScopes(); err != nil {
+		t.Errorf("Expected no error getting scope, got %v.", err)
+	} else {
+		if len(scopes) != len(ss.BaseURLs) {
+			t.Errorf("Length mismatch: %d vs %d", len(scopes), len(ss.BaseURLs))
+		}
+		if scopes[0].String() != ss.BaseURLs[0] {
+			t.Errorf("URL mismatch: %v vs %v", scopes[0], ss.BaseURLs[0])
+		}
+		if scopes[1].String() != ss.BaseURLs[1]+"/" {
+			t.Errorf("URL mismatch: %v vs %v", scopes[1], ss.BaseURLs[1])
+		}
+	}
+}
+
+func TestScanSettings_GetScopes_Error(t *testing.T) {
+	ss := &ScanSettings{
+		BaseURLs: []string{"://localhost/"},
+	}
+	if scopes, err := ss.GetScopes(); err == nil {
+		t.Error("Expected error, got nil.")
+	} else if scopes != nil {
+		t.Errorf("Expected nil scopes, got %v.", scopes)
+	}
+}
