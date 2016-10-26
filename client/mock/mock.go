@@ -28,8 +28,11 @@ type MockClientFactory struct {
 	NextClient    *MockClient
 }
 type MockClient struct {
-	NextResponse *http.Response
-	Requests     []*url.URL
+	ForeverResponse *http.Response
+	NextResponse    *http.Response
+	Requests        []*url.URL
+	Redir           *url.URL
+	CheckRedirect   func(*http.Request, []*http.Request) error
 }
 
 func (f *MockClientFactory) Get() client.Client {
@@ -46,6 +49,15 @@ func (f *MockClientFactory) Get() client.Client {
 
 func (c *MockClient) RequestURL(u *url.URL) (*http.Response, error) {
 	c.Requests = append(c.Requests, u)
+	if c.Redir != nil && c.CheckRedirect != nil {
+		req := &http.Request{URL: c.Redir}
+		if err := c.CheckRedirect(req, []*http.Request{}); err != nil {
+			return nil, err
+		}
+	}
+	if c.ForeverResponse != nil {
+		return c.ForeverResponse, nil
+	}
 	if c.NextResponse == nil {
 		return nil, errors.New("No NextResponse for MockClient.")
 	}
@@ -54,7 +66,9 @@ func (c *MockClient) RequestURL(u *url.URL) (*http.Response, error) {
 	return r, nil
 }
 
-func (_ *MockClient) SetCheckRedirect(_ func(*http.Request, []*http.Request) error) {}
+func (c *MockClient) SetCheckRedirect(f func(*http.Request, []*http.Request) error) {
+	c.CheckRedirect = f
+}
 
 func ResponseFromString(s string) *http.Response {
 	cb := ioutil.NopCloser(bytes.NewBufferString(s))
