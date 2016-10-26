@@ -65,11 +65,67 @@ func TestTryURL_Basic(t *testing.T) {
 	resp.StatusCode = 200
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
 	TryURLHelper(u, resp)
+	// TODO: check which requests were made
 }
 
 func TestTryURL_Error(t *testing.T) {
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
 	TryURLHelper(u, nil)
+	// TODO: check which requests were made
+}
+
+func TestTryMangleURL_Basic(t *testing.T) {
+	resp := mock.ResponseFromString("")
+	resp.StatusCode = 200
+	client := &mock.MockClient{
+		ForeverResponse: resp,
+	}
+	ss := &settings.ScanSettings{
+		SpiderCodes: []int{200},
+		Mangle:      true,
+	}
+	rchan := make(chan results.Result)
+	go func() {
+		for range rchan {
+		}
+	}()
+	w := &Worker{
+		client:   client,
+		settings: ss,
+		rchan:    rchan,
+		adder:    noopUrl,
+	}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	w.TryMangleURL(u)
+	// TODO: check which requests were made
+}
+
+func TestTryHandleURL_Basic(t *testing.T) {
+	resp := mock.ResponseFromString("")
+	resp.StatusCode = 200
+	client := &mock.MockClient{
+		ForeverResponse: resp,
+	}
+	ss := &settings.ScanSettings{
+		SpiderCodes: []int{200},
+		Mangle:      true,
+		Extensions:  []string{"html", "php"},
+	}
+	rchan := make(chan results.Result)
+	go func() {
+		for range rchan {
+		}
+	}()
+	w := &Worker{
+		client:   client,
+		settings: ss,
+		rchan:    rchan,
+		adder:    noopUrl,
+		done:     noopInt,
+	}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/index"}
+	w.HandleURL(u)
+	// TODO: check which requests were made
 }
 
 func TestStartWorkers_Single(t *testing.T) {
