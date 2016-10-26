@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package mock provides a mock client to be used in testing.
+// It can allow tests using the Client or Factory interfaces to be tested
+// without making real network connections.
 package mock
 
 import (

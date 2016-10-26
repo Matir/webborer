@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides a custom logging implementation for gobuster.
 package logging
 
 import (

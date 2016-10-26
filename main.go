@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Gobuster is a directory-enumeration tool writte in Go.
 package main
 
 import (

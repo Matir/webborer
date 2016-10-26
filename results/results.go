@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package results provides writers for several types of output.
 package results
 
 import (

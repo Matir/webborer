@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package filter provides the ability to filter and modify a channel of URLs.
+// This includes filtering exclusions, duplicates, and expanding the channel
+// based on the wordlist.
 package filter
 
 import (

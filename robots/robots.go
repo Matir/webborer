@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package robots provides support for parsing robots.txt files.
 package robots
 
 import (

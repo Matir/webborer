@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package util provides a set of utility and helper functions for gobuster.
 package util
 
 import (
