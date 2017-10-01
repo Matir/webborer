@@ -20,7 +20,7 @@ package mock
 import (
 	"bytes"
 	"errors"
-	"github.com/Matir/gobuster/client"
+	"github.com/Matir/webborer/client"
 	"io/ioutil"
 	"net/http"
 	"net/url"

@@ -15,7 +15,7 @@
 package workqueue
 
 import (
-	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/webborer/logging"
 	"sync"
 )
 

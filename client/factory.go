@@ -16,7 +16,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/webborer/logging"
 	"h12.me/socks"
 	"math/rand"
 	"net/http"

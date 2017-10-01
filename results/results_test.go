@@ -15,7 +15,7 @@
 package results
 
 import (
-	"github.com/Matir/gobuster/settings"
+	"github.com/Matir/webborer/settings"
 	"net/url"
 	"testing"
 )

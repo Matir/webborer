@@ -15,7 +15,7 @@
 package settings
 
 import (
-	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/webborer/logging"
 	"testing"
 	"time"
 )
