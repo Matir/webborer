@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package settings provides a central interface to gobuster settings.
+// Package settings provides a central interface to webborer settings.
 package settings
 
 import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/webborer/logging"
 	"net/url"
 	"os"
 	"runtime"
@@ -96,7 +96,7 @@ var robotsModeStrings = [...]string{
 	"seed",
 }
 
-var DefaultUserAgent = "GoBuster 0.01"
+var DefaultUserAgent = "WebBorer 0.01"
 var outputFormats []string
 
 // StringSliceFlag is a flag.Value that takes a comma-separated string and turns

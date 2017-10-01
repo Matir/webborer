@@ -17,7 +17,7 @@ package robots
 
 import (
 	"bytes"
-	"github.com/Matir/gobuster/client"
+	"github.com/Matir/webborer/client"
 	"io/ioutil"
 	"net/url"
 )

@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Gobuster is a directory-enumeration tool writte in Go.
+// WebBorer is a directory-enumeration tool written in Go.
 package main
 
 import (
-	"github.com/Matir/gobuster/client"
-	"github.com/Matir/gobuster/filter"
-	"github.com/Matir/gobuster/logging"
-	"github.com/Matir/gobuster/results"
-	ss "github.com/Matir/gobuster/settings"
-	"github.com/Matir/gobuster/util"
-	"github.com/Matir/gobuster/wordlist"
-	"github.com/Matir/gobuster/worker"
-	"github.com/Matir/gobuster/workqueue"
+	"github.com/Matir/webborer/client"
+	"github.com/Matir/webborer/filter"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/results"
+	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/wordlist"
+	"github.com/Matir/webborer/worker"
+	"github.com/Matir/webborer/workqueue"
 	"runtime"
 )
 
-// This is the main runner for gobuster.
+// This is the main runner for webborer.
 // TODO: separate the actual scanning from all of the setup steps
 func main() {
 	util.EnableStackTraces()

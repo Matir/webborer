@@ -15,9 +15,9 @@
 package worker
 
 import (
-	"github.com/Matir/gobuster/client/mock"
-	"github.com/Matir/gobuster/results"
-	"github.com/Matir/gobuster/settings"
+	"github.com/Matir/webborer/client/mock"
+	"github.com/Matir/webborer/results"
+	"github.com/Matir/webborer/settings"
 	"net/http"
 	"net/url"
 	"strings"

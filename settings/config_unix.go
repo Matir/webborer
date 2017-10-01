@@ -23,13 +23,13 @@ import (
 )
 
 var defaultConfigPaths = []string{
-	// This will be prepended by $HOME/.config/gobuster.conf
-	"/etc/gobuster.conf",
+	// This will be prepended by $HOME/.config/webborer.conf
+	"/etc/webborer.conf",
 }
 
 func init() {
 	if usr, err := user.Current(); err == nil {
-		path := filepath.Join(usr.HomeDir, ".config", "gobuster.conf")
+		path := filepath.Join(usr.HomeDir, ".config", "webborer.conf")
 		defaultConfigPaths = append([]string{path}, defaultConfigPaths...)
 	}
 }

@@ -17,10 +17,10 @@
 package workqueue
 
 import (
-	"github.com/Matir/gobuster/client"
-	"github.com/Matir/gobuster/logging"
-	"github.com/Matir/gobuster/robots"
-	"github.com/Matir/gobuster/util"
+	"github.com/Matir/webborer/client"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/robots"
+	"github.com/Matir/webborer/util"
 	"net/url"
 	"sync"
 )

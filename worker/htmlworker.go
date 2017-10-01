@@ -15,9 +15,9 @@
 package worker
 
 import (
-	"github.com/Matir/gobuster/logging"
-	"github.com/Matir/gobuster/util"
-	"github.com/Matir/gobuster/workqueue"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/workqueue"
 	"golang.org/x/net/html"
 	"io"
 	"net/http"

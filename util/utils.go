@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package util provides a set of utility and helper functions for gobuster.
+// Package util provides a set of utility and helper functions for webborer.
 package util
 
 import (
-	"github.com/Matir/gobuster/logging"
+	"github.com/Matir/webborer/logging"
 	"net/url"
 	"os"
 	"os/signal"
@@ -138,8 +138,8 @@ func getParentPathsString(childPath string) []string {
 
 // Debug profiling support
 func EnableCPUProfiling() func() {
-	if profFile, err := os.Create("gobuster.prof"); err != nil {
-		logging.Logf(logging.LogError, "Unable to open gobuster.prof for profiling: %v", err)
+	if profFile, err := os.Create("webborer.prof"); err != nil {
+		logging.Logf(logging.LogError, "Unable to open webborer.prof for profiling: %v", err)
 	} else {
 		pprof.StartCPUProfile(profFile)
 		sigintChan := make(chan os.Signal, 1)

@@ -18,12 +18,12 @@ package worker
 
 import (
 	"fmt"
-	"github.com/Matir/gobuster/client"
-	"github.com/Matir/gobuster/logging"
-	"github.com/Matir/gobuster/results"
-	ss "github.com/Matir/gobuster/settings"
-	"github.com/Matir/gobuster/util"
-	"github.com/Matir/gobuster/workqueue"
+	"github.com/Matir/webborer/client"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/results"
+	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/workqueue"
 	"io"
 	"net/http"
 	"net/url"

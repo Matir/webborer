@@ -15,8 +15,8 @@
 package filter
 
 import (
-	"github.com/Matir/gobuster/util"
-	"github.com/Matir/gobuster/workqueue"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/workqueue"
 	"net/url"
 	"strings"
 )

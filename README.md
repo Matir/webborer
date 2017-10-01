@@ -1,6 +1,10 @@
-## GoBuster ##
+## WebBorer ##
 
-GoBuster is a directory-enumeration tool written in Go and targeting CLI usage.
+WebBorer is a directory-enumeration tool written in Go and targeting CLI usage.
+
+This project was formerly named 'GoBuster', but that had a namespace collision
+with OJ Reeves' excellent tool (which was released about the same time as I was
+preparing this for release).
 
 ### Features ###
 
@@ -15,15 +19,15 @@ GoBuster is a directory-enumeration tool written in Go and targeting CLI usage.
 
 Please see the CONTRIBUTING file in this directory.
 
-[![Build Status](https://travis-ci.org/Matir/gobuster.svg?branch=master)](https://travis-ci.org/Matir/gobuster)
-[![codecov](https://codecov.io/gh/Matir/gobuster/branch/master/graph/badge.svg)](https://codecov.io/gh/Matir/gobuster)
+[![Build Status](https://travis-ci.org/Matir/webborer.svg?branch=master)](https://travis-ci.org/Matir/webborer)
+[![codecov](https://codecov.io/gh/Matir/webborer/branch/master/graph/badge.svg)](https://codecov.io/gh/Matir/webborer)
 
 ### Copyright ###
-Copyright 2015-2016 Google Inc.
+Copyright 2015-2017 Google Inc.
 
-GoBuster is not an official Google product (experimental or otherwise), it is
+WebBorer is not an official Google product (experimental or otherwise), it is
 just code that happens to be owned by Google.
 
 ### Contact ###
-For questions about GoBuster, contact David Tomaschik
+For questions about WebBorer, contact David Tomaschik
 <<davidtomaschik@google.com>>
