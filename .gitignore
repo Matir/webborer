@@ -1,5 +1,5 @@
-gobuster
+webborer
 benchmarks
 coverage.*
 *.swp
-gobuster.prof
+webborer.prof
