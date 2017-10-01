@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright 2017 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import (
 	"net/url"
 )
 
+// Client is a thin wrapper around http.Client to make enhancements to
+// support our use case.
 type Client interface {
 	RequestURL(*url.URL) (*http.Response, error)
 	SetCheckRedirect(func(*http.Request, []*http.Request) error)
@@ -31,13 +33,13 @@ type httpClient struct {
 }
 
 func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
-	req := c.makeRequest(u)
+	// TODO: support other methods
+	req := c.makeRequest(u, "GET")
 	return c.Do(req)
 }
 
-func (c *httpClient) makeRequest(u *url.URL) *http.Request {
-	// TODO: support other methods
-	req, _ := http.NewRequest("GET", u.String(), nil)
+func (c *httpClient) makeRequest(u *url.URL, method string) *http.Request {
+	req, _ := http.NewRequest(method, u.String(), nil)
 	req.Header.Set("User-Agent", c.UserAgent)
 	return req
 }
