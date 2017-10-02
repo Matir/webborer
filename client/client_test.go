@@ -23,7 +23,7 @@ import (
 func TestMakeRequest_Basic(t *testing.T) {
 	c := &httpClient{}
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	req := c.makeRequest(u)
+	req := c.makeRequest(u, "GET")
 	if req.URL.String() != u.String() {
 		t.Errorf("URL does not match requested: %s != %s", req.URL.String(), u.String())
 	}
