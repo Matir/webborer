@@ -27,6 +27,16 @@ func TestNewProxyClientFactory_Default(t *testing.T) {
 	}
 }
 
+func TestNewProxyClientFactory_DefaultPassword(t *testing.T) {
+	if fac, err := NewProxyClientFactory([]string{}, time.Nanosecond, ""); err != nil {
+		t.Errorf("Unable to construct empty proxy client factory.")
+	} else if fac == nil {
+		t.Errorf("Returned nil factory on default.")
+	} else {
+		fac.SetUsernamePassword("test", "test")
+	}
+}
+
 func TestNewProxyClientFactory_SingleProxy(t *testing.T) {
 	if fac, err := NewProxyClientFactory([]string{"socks5://localhost"}, time.Nanosecond, ""); err != nil {
 		t.Errorf("Unable to construct empty proxy client factory.")

@@ -67,6 +67,7 @@ func main() {
 		logging.Logf(logging.LogFatal, "Unable to build client factory: %s", err.Error())
 		return
 	}
+	clientFactory.SetUsernamePassword(settings.HTTPUsername, settings.HTTPPassword)
 
 	// Starting point
 	scope, err := settings.GetScopes()

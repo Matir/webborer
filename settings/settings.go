@@ -74,6 +74,10 @@ type ScanSettings struct {
 	AllowHTTPSUpgrade bool
 	// Spider which http response codes
 	SpiderCodes []int
+	// HTTP Auth Username
+	HTTPUsername string
+	// HTTP Auth Password
+	HTTPPassword string
 	// Whether or not to do CPU Profiling
 	DebugCPUProf bool
 	// Config file used when loading (for debugging only)
@@ -255,11 +259,13 @@ func (settings *ScanSettings) InitFlags() {
 	flag.StringVar(&settings.LogLevel, "loglevel", settings.LogLevel, loglevelHelp)
 	flag.StringVar(&settings.UserAgent, "user-agent", DefaultUserAgent, "`User-Agent` for requests")
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
-	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings[:], ", "))
-	robotsModeVar := robotsFlag{&settings.RobotsMode}
 	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
 	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
+	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings[:], ", "))
+	robotsModeVar := robotsFlag{&settings.RobotsMode}
 	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
+	flag.StringVar(&settings.HTTPUsername, "http-username", "", "Username to be used for HTTP Auth")
+	flag.StringVar(&settings.HTTPPassword, "http-password", "", "Password to be used for HTTP Auth")
 
 	// Debugging flags
 	flag.BoolVar(&settings.DebugCPUProf, "debug-cpuprof", false, "[DEBUG] CPU Profiling")
