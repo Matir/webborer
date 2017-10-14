@@ -37,6 +37,8 @@ type Result struct {
 	Redir *url.URL
 	// Content length
 	Length int64
+	// Content-type header
+	ContentType string
 }
 
 // ResultsManager provides an interface for reading results from a channel and

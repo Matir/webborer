@@ -23,8 +23,9 @@ import (
 func makeTestResults() []Result {
 	return []Result{
 		Result{
-			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
-			Code: 200,
+			URL:         &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
+			Code:        200,
+			ContentType: "text/html",
 		},
 		Result{
 			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/x"},

@@ -55,7 +55,7 @@ func (rm *HTMLResultsManager) Run(res <-chan Result) {
 }
 
 func (rm *HTMLResultsManager) writeHeader() {
-	header := `{{define "HEAD"}}<html><head><title>webborer: {{.BaseURL}}</title></head><h2>Results for <a href="{{.BaseURL}}">{{.BaseURL}}</a></h2><table><tr><th>Code</th><th>URL</th><th>Size</th></tr>{{end}}`
+	header := `{{define "HEAD"}}<html><head><title>webborer: {{.BaseURL}}</title></head><h2>Results for <a href="{{.BaseURL}}">{{.BaseURL}}</a></h2><table><tr><th>Code</th><th>URL</th><th>Size</th><th>Content-Type</th></tr>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(header)
 	if err != nil {
 		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
@@ -85,7 +85,7 @@ func (rm *HTMLResultsManager) writeFooter() {
 
 func (rm *HTMLResultsManager) writeResult(res *Result) {
 	// TODO: don't rebuild the template with each row
-	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{if ge .Length 0}}{{.Length}}{{end}}</td></tr>{{end}}`
+	tmpl := `{{define "ROW"}}<tr><td>{{.Code}}</td><td><a href="{{.URL.String}}">{{.URL.String}}</a></td><td>{{if ge .Length 0}}{{.Length}}{{end}}</td><td>{{.ContentType}}</td></tr>{{end}}`
 	t, err := template.New("htmlResultsManager").Parse(tmpl)
 	if err != nil {
 		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
