@@ -74,6 +74,7 @@ func (factory *ProxyClientFactory) SetUsernamePassword(username, password string
 	factory.httpPassword = password
 }
 
+// Get a single client instance from the factory
 func (factory *ProxyClientFactory) Get() Client {
 	if len(factory.proxyURLs) == 0 {
 		return &httpClient{
@@ -95,6 +96,7 @@ func (factory *ProxyClientFactory) Get() Client {
 	return cli
 }
 
+// Build a client for a particular proxy instance
 func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) *httpClient {
 	proto := proxyTypeMap[proxy.Scheme]
 	dialer := socks.DialSocksProxy(proto, proxy.Host)
