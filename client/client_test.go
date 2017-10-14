@@ -100,7 +100,7 @@ func TestMakeRequest_Basic(t *testing.T) {
 }
 
 func TestSetCheckRedirect(_ *testing.T) {
-	c := &httpClient{}
+	c := &httpClient{Client: &http.Client{}}
 	c.SetCheckRedirect(func(_ *http.Request, _ []*http.Request) error { return nil })
 }
 
@@ -138,5 +138,65 @@ func TestRequestURL_BasicAuth(t *testing.T) {
 	}
 	if resp.StatusCode != 200 {
 		t.Errorf("Got non-200 response code: %d", resp.StatusCode)
+	}
+}
+
+// Test with access denied
+func TestRequestURL_BasicAuth_NoAuthHeader(t *testing.T) {
+	mockResp := &http.Response{
+		StatusCode: 401,
+	}
+	mockClient := makeMockHttpClient(mockResp)
+	c := &httpClient{Client: mockClient, HTTPUsername: "user", HTTPPassword: "pass"}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	resp, err := c.RequestURL(u)
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	if resp == nil {
+		t.Errorf("Got nil response!")
+	}
+	if resp.StatusCode != 401 {
+		t.Errorf("Got non-401 response code: %d", resp.StatusCode)
+	}
+}
+
+// Test with HTTP Basic Auth, no password available
+func TestRequestURL_BasicAuth_NoCreds(t *testing.T) {
+	mockClient := &mockAuthHttpClient{}
+	c := &httpClient{Client: mockClient}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	resp, err := c.RequestURL(u)
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	if resp == nil {
+		t.Errorf("Got nil response!")
+	}
+	if resp.StatusCode != 401 {
+		t.Errorf("Got non-401 response code: %d", resp.StatusCode)
+	}
+}
+
+// Test with digest
+func TestRequestURL_DigestAuth(t *testing.T) {
+	mockResp := &http.Response{
+		StatusCode: 401,
+		Header:     make(http.Header, 0),
+	}
+	// TODO: make this into a real digest header
+	mockResp.Header.Set("WWW-Authenticate", "Digest realm=\"testing\"")
+	mockClient := makeMockHttpClient(mockResp)
+	c := &httpClient{Client: mockClient, HTTPUsername: "user", HTTPPassword: "pass"}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	resp, err := c.RequestURL(u)
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	if resp == nil {
+		t.Errorf("Got nil response!")
+	}
+	if resp.StatusCode != 401 {
+		t.Errorf("Got non-401 response code: %d", resp.StatusCode)
 	}
 }
