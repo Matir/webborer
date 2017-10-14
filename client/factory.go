@@ -40,9 +40,11 @@ type ClientFactory interface {
 // ProxyClientFactory uses the h12.me/socks package to support SOCKS proxies
 // when transporting requests to the webserver.
 type ProxyClientFactory struct {
-	proxyURLs []*url.URL
-	timeout   time.Duration
-	userAgent string
+	proxyURLs    []*url.URL
+	timeout      time.Duration
+	userAgent    string
+	httpUsername string
+	httpPassword string
 }
 
 // Create a ProxyClientFactory for the provided list of proxies.
@@ -67,18 +69,33 @@ func NewProxyClientFactory(proxies []string, timeout time.Duration, agent string
 	return factory, nil
 }
 
-func (factory *ProxyClientFactory) Get() Client {
-	if len(factory.proxyURLs) == 0 {
-		return &httpClient{Client: &http.Client{Timeout: factory.timeout}, UserAgent: factory.userAgent}
-	}
-	if len(factory.proxyURLs) == 1 {
-		return clientForProxy(factory.proxyURLs[0], factory.timeout, factory.userAgent)
-	}
-	proxy := factory.proxyURLs[rand.Intn(len(factory.proxyURLs))]
-	return clientForProxy(proxy, factory.timeout, factory.userAgent)
+func (factory *ProxyClientFactory) SetUsernamePassword(username, password string) {
+	factory.httpUsername = username
+	factory.httpPassword = password
 }
 
-func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) Client {
+func (factory *ProxyClientFactory) Get() Client {
+	if len(factory.proxyURLs) == 0 {
+		return &httpClient{
+			Client:       &http.Client{Timeout: factory.timeout},
+			UserAgent:    factory.userAgent,
+			HTTPUsername: factory.httpUsername,
+			HTTPPassword: factory.httpPassword,
+		}
+	}
+	var cli *httpClient
+	if len(factory.proxyURLs) == 1 {
+		cli = clientForProxy(factory.proxyURLs[0], factory.timeout, factory.userAgent)
+	} else {
+		proxy := factory.proxyURLs[rand.Intn(len(factory.proxyURLs))]
+		cli = clientForProxy(proxy, factory.timeout, factory.userAgent)
+	}
+	cli.HTTPUsername = factory.httpUsername
+	cli.HTTPPassword = factory.httpPassword
+	return cli
+}
+
+func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) *httpClient {
 	proto := proxyTypeMap[proxy.Scheme]
 	dialer := socks.DialSocksProxy(proto, proxy.Host)
 	cl := &httpClient{
