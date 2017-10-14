@@ -67,6 +67,7 @@ func NewProxyClientFactory(proxies []string, timeout time.Duration, agent string
 	return factory, nil
 }
 
+// Get a single client instance from the factory
 func (factory *ProxyClientFactory) Get() Client {
 	if len(factory.proxyURLs) == 0 {
 		return &httpClient{Client: http.Client{Timeout: factory.timeout}, UserAgent: factory.userAgent}
@@ -78,6 +79,7 @@ func (factory *ProxyClientFactory) Get() Client {
 	return clientForProxy(proxy, factory.timeout, factory.userAgent)
 }
 
+// Build a client for a particular proxy instance
 func clientForProxy(proxy *url.URL, timeout time.Duration, agent string) Client {
 	proto := proxyTypeMap[proxy.Scheme]
 	dialer := socks.DialSocksProxy(proto, proxy.Host)
