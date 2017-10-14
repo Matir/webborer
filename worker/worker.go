@@ -185,10 +185,11 @@ func (w *Worker) TryURL(task *url.URL) bool {
 			redir = w.redir.URL
 		}
 		w.rchan <- results.Result{
-			URL:    task,
-			Code:   resp.StatusCode,
-			Redir:  redir,
-			Length: resp.ContentLength,
+			URL:         task,
+			Code:        resp.StatusCode,
+			Redir:       redir,
+			Length:      resp.ContentLength,
+			ContentType: resp.Header.Get("Content-Type"),
 		}
 		tryMangle = w.KeepSpidering(resp.StatusCode)
 	}
@@ -233,7 +234,7 @@ func Mangle(basename string) []string {
 		".%s.swp", // VIM Swap File
 		"%s~",     // Backup file
 		"%s.bak",  // Backup file
-		"%s.orig", //Backup file
+		"%s.orig", // Backup file
 	}
 	res := make([]string, len(mangleRules))
 	for i, rule := range mangleRules {
