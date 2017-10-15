@@ -1,4 +1,4 @@
-// Copyright 2015 Google Inc. All Rights Reserved.
+// Copyright 2017 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ func ResetLog(logfilePath, logLevel string) {
 	}
 }
 
+// Log a formatted string
 func Logf(level int, format string, args ...interface{}) {
 	if level < logLevel {
 		return
@@ -62,6 +63,32 @@ func Logf(level int, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	msg = fmt.Sprintf("[%s] %s", LogLevelStrings[level], msg)
 	defaultLogger.Output(2, msg)
+}
+
+// Log at Debug level
+func Debugf(format string, args ...interface{}) {
+  Logf(LogDebug, format, args...)
+}
+
+// Log at Info level
+func Infof(format string, args ...interface{}) {
+  Logf(LogInfo, format, args...)
+}
+
+// Log at Warning level
+func Warningf(format string, args ...interface{}) {
+  Logf(LogWarning, format, args...)
+}
+var Warnf = Warningf
+
+// Log at Error level
+func Errorf(format string, args ...interface{}) {
+  Logf(LogError, format, args...)
+}
+
+// Log at Fatal level
+func Fatalf(format string, args ...interface{}) {
+  Logf(LogFatal, format, args...)
 }
 
 func SetLogLevel(level string) {
