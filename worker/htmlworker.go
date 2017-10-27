@@ -26,7 +26,7 @@ import (
 )
 
 const (
-  maxHTMLWorkerSize = 10*1024*1024
+	maxHTMLWorkerSize = 10 * 1024 * 1024
 )
 
 type HTMLWorker struct {
@@ -40,7 +40,7 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 
 // Work on this response
 func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
-  limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
+	limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
 	links := w.GetLinks(limitedBody)
 	foundURLs := make([]*url.URL, 0, len(links))
 	for _, l := range links {
@@ -65,8 +65,7 @@ func (*HTMLWorker) Eligible(resp *http.Response) bool {
 		return false
 	}
 	// ContentLength is often -1, indicating unknown, so we'll try to parse those
-	return resp.ContentLength == -1 || (
-	  resp.ContentLength > 0 && resp.ContentLength < maxHTMLWorkerSize)
+	return resp.ContentLength == -1 || (resp.ContentLength > 0 && resp.ContentLength < maxHTMLWorkerSize)
 }
 
 // Get the links for the body.
