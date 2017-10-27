@@ -136,6 +136,7 @@ func main() {
 	queue.InputFinished()
 	close(rchan)
 
+	logging.Debugf("Waiting for results manager.")
 	resultsManager.Wait()
 	if cpuProfStop != nil {
 		cpuProfStop()
