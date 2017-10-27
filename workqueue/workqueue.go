@@ -28,6 +28,7 @@ import (
 // WorkQueue is a singleton that maintains the queue of work to be done.
 // It reads from one input channel, verifies that the URL is in scope,
 // queues it, then writes it to the work channel to be done.
+// Internally, it implements a singly-linked list.
 type WorkQueue struct {
 	// Elements to be worked on
 	head *queueNode
