@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright 2017 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,14 @@
 package logging
 
 import (
+	"io/ioutil"
+	"log"
 	"testing"
 )
+
+func nullLog() {
+	defaultLogger = log.New(ioutil.Discard, "", log.Ldate|log.Ltime|log.Lshortfile)
+}
 
 func TestLogLevelStrings(t *testing.T) {
 	if len(LogLevelStrings) != logLevelMax {
@@ -32,5 +38,16 @@ func TestResetLog(_ *testing.T) {
 }
 
 func TestLogf(_ *testing.T) {
+	nullLog()
 	Logf(LogDebug, "Test Logf.")
+	Logf(LogFatal, "Testing... %v", true)
+}
+
+func TestLogLevels(_ *testing.T) {
+	nullLog()
+	Debugf("Test %s", "Debugf")
+	Infof("Test %s", "Infof")
+	Warningf("Test %s", "Warningf")
+	Errorf("Test %s", "Errorf")
+	Fatalf("Test %s", "Fatalf")
 }
