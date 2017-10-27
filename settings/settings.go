@@ -78,6 +78,8 @@ type ScanSettings struct {
 	HTTPUsername string
 	// HTTP Auth Password
 	HTTPPassword string
+	// Progress bar
+	ProgressBar bool
 	// Whether or not to do CPU Profiling
 	DebugCPUProf bool
 	// Config file used when loading (for debugging only)
@@ -207,6 +209,7 @@ func NewScanSettings() *ScanSettings {
 		Timeout:     30 * time.Second,
 		LogLevel:    "WARNING",
 		SpiderCodes: []int{200},
+		ProgressBar: true,
 	}
 	settings.InitFlags()
 	return settings
@@ -266,6 +269,7 @@ func (settings *ScanSettings) InitFlags() {
 	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
 	flag.StringVar(&settings.HTTPUsername, "http-username", "", "Username to be used for HTTP Auth")
 	flag.StringVar(&settings.HTTPPassword, "http-password", "", "Password to be used for HTTP Auth")
+	flag.BoolVar(&settings.ProgressBar, "progress", true, "Display a progress bar on stderr.")
 
 	// Debugging flags
 	flag.BoolVar(&settings.DebugCPUProf, "debug-cpuprof", false, "[DEBUG] CPU Profiling")

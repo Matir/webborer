@@ -122,6 +122,11 @@ func main() {
 	logging.Logf(logging.LogDebug, "Adding starting URLs: %v", scope)
 	queue.AddURLs(scope...)
 
+	// Add a progress bar?
+	if settings.ProgressBar {
+		initProgressBar(queue.GetCounter())
+	}
+
 	// Potentially seed from robots
 	if settings.RobotsMode == ss.SeedRobots {
 		queue.SeedFromRobots(scope, clientFactory)

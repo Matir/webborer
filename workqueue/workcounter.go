@@ -21,12 +21,14 @@ import (
 
 // Count work to do and work done
 type WorkCounter struct {
-	todo int64
-	done int64
+	todo   int64
+	done   int64
+	doneCb func(done, total int64)
 	sync.Mutex
 	sync.Cond
 }
 
+// Increment the count to be done (input)
 func (ctr *WorkCounter) Add(todo int64) {
 	ctr.Lock()
 	defer ctr.Unlock()
@@ -34,6 +36,7 @@ func (ctr *WorkCounter) Add(todo int64) {
 	ctr.Stats()
 }
 
+// Increment the count that is done (output)
 func (ctr *WorkCounter) Done(done int64) {
 	ctr.Lock()
 	defer ctr.Unlock()
@@ -45,12 +48,22 @@ func (ctr *WorkCounter) Done(done int64) {
 	if ctr.done == ctr.todo {
 		// Mark done
 		logging.Logf(logging.LogInfo, "Work counter thinks we're done.")
+		// These are part of the sync.Cond
 		ctr.L.Lock()
 		defer ctr.L.Unlock()
 		ctr.Broadcast()
 	}
 }
 
+// Update the stats of the counter
 func (ctr *WorkCounter) Stats() {
 	logging.Logf(logging.LogDebug, "WorkCounter: %d/%d", ctr.done, ctr.todo)
+	if ctr.doneCb != nil {
+		ctr.doneCb(ctr.done, ctr.todo)
+	}
+}
+
+// Set the status callback for this workcounter
+func (ctr *WorkCounter) SetStatusCallback(f func(int64, int64)) {
+	ctr.doneCb = f
 }

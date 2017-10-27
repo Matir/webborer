@@ -221,6 +221,11 @@ func (q *WorkQueue) peek() *url.URL {
 	return nil
 }
 
+// Get the counter
+func (q *WorkQueue) GetCounter() *WorkCounter {
+	return &q.ctr
+}
+
 // Build a function to check if the target URL is in scope.
 func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
 	allowedScopes := make([]*url.URL, len(scope))
