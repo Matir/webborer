@@ -28,19 +28,28 @@ import (
 	"runtime"
 )
 
+// Load settings from flags
+func loadSettings() (*ss.ScanSettings, error) {
+	// Load scan settings
+	settings, err := ss.GetScanSettings()
+	if err != nil {
+		logging.Logf(logging.LogFatal, err.Error())
+		return nil, err
+	}
+	logging.ResetLog(settings.LogfilePath, settings.LogLevel)
+	logging.Logf(logging.LogInfo, "Flags: %s", settings)
+	return settings, nil
+}
+
 // This is the main runner for webborer.
 // TODO: separate the actual scanning from all of the setup steps
 func main() {
 	util.EnableStackTraces()
 
-	// Load scan settings
-	settings, err := ss.GetScanSettings()
+	settings, err := loadSettings()
 	if err != nil {
-		logging.Logf(logging.LogFatal, err.Error())
 		return
 	}
-	logging.ResetLog(settings.LogfilePath, settings.LogLevel)
-	logging.Logf(logging.LogInfo, "Flags: %s", settings)
 
 	// Enable CPU profiling
 	var cpuProfStop func()
@@ -91,6 +100,8 @@ func main() {
 		filter.AddRobotsFilter(scope, clientFactory)
 	}
 
+	// filter paths after expansion
+	logging.Debugf("Starting expansion and filtering...")
 	work := filter.RunFilter(expander.Expand(queue.GetWorkChan()))
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
