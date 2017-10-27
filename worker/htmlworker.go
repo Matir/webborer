@@ -25,6 +25,10 @@ import (
 	"strings"
 )
 
+const (
+	maxHTMLWorkerSize = 10 * 1024 * 1024
+)
+
 type HTMLWorker struct {
 	// Function to add future work
 	adder workqueue.QueueAddFunc
@@ -36,7 +40,8 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 
 // Work on this response
 func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
-	links := w.GetLinks(body)
+	limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
+	links := w.GetLinks(limitedBody)
 	foundURLs := make([]*url.URL, 0, len(links))
 	for _, l := range links {
 		u, err := url.Parse(l)
@@ -59,7 +64,8 @@ func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	if strings.ToLower(ct) != "text/html" {
 		return false
 	}
-	return resp.ContentLength > 0 && resp.ContentLength < 1024*1024
+	// ContentLength is often -1, indicating unknown, so we'll try to parse those
+	return resp.ContentLength == -1 || (resp.ContentLength > 0 && resp.ContentLength < maxHTMLWorkerSize)
 }
 
 // Get the links for the body.
