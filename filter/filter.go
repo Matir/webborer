@@ -58,6 +58,8 @@ func (f *WorkFilter) RunFilter(src <-chan *url.URL) <-chan *url.URL {
 	go func() {
 	taskLoop:
 		for task := range src {
+		  // Fragment is irrelevant for requests to server
+		  task.Fragment = ""
 			taskURL := task.String()
 			if _, ok := f.done[taskURL]; ok {
 				f.reject(task, "already done")
