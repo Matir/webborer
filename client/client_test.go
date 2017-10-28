@@ -102,6 +102,8 @@ func TestMakeRequest_Basic(t *testing.T) {
 func TestSetCheckRedirect(_ *testing.T) {
 	c := &httpClient{Client: &http.Client{}}
 	c.SetCheckRedirect(func(_ *http.Request, _ []*http.Request) error { return nil })
+	c = &httpClient{Client: &mockHttpClient{}}
+	c.SetCheckRedirect(func(_ *http.Request, _ []*http.Request) error { return nil })
 }
 
 // Basic test of the full client stack
