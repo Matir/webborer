@@ -195,3 +195,18 @@ func TestScanSettings_GetScopes_Error(t *testing.T) {
 		t.Errorf("Expected nil scopes, got %v.", scopes)
 	}
 }
+
+func TestScanSettings_Validate(t *testing.T) {
+	ss := &ScanSettings{
+		BaseURLs: []string{},
+	}
+	if err := ss.Validate(); err == nil {
+		t.Errorf("Expected error with no BaseURLs.")
+	}
+	ss = &ScanSettings{
+		BaseURLs: []string{"http://www.example.com"},
+	}
+	if err := ss.Validate(); err != nil {
+		t.Errorf("Expected no errors with BaseURLs.")
+	}
+}
