@@ -3,3 +3,4 @@ benchmarks
 coverage.*
 *.swp
 webborer.prof
+*.out
