@@ -18,6 +18,7 @@ import (
 	"github.com/Matir/webborer/client/mock"
 	"github.com/Matir/webborer/results"
 	"github.com/Matir/webborer/settings"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -52,6 +53,7 @@ func TryURLHelper(u *url.URL, resp *http.Response) *Worker {
 		rchan:    rchan,
 		adder:    noopUrl,
 	}
+	defer close(rchan)
 	go func() {
 		for range rchan {
 		}
@@ -85,6 +87,7 @@ func TestTryMangleURL_Basic(t *testing.T) {
 		Mangle:      true,
 	}
 	rchan := make(chan results.Result)
+	defer close(rchan)
 	go func() {
 		for range rchan {
 		}
@@ -112,6 +115,7 @@ func TestTryHandleURL_Basic(t *testing.T) {
 		Extensions:  []string{"html", "php"},
 	}
 	rchan := make(chan results.Result)
+	defer close(rchan)
 	go func() {
 		for range rchan {
 		}
@@ -128,20 +132,32 @@ func TestTryHandleURL_Basic(t *testing.T) {
 	// TODO: check which requests were made
 }
 
-func TestStartWorkers_Single(t *testing.T) {
+func TestStartWorkers_SingleIteration(t *testing.T) {
 	ss := &settings.ScanSettings{
-		Workers: 1,
+		Workers:   2,
+		ParseHTML: true,
 	}
 	schan := make(chan *url.URL)
 	rchan := make(chan results.Result)
-	for _, w := range StartWorkers(
+	u, _ := url.Parse("http://www.example.com")
+	for i, w := range StartWorkers(
 		ss,
 		&mock.MockClientFactory{},
 		schan,
 		noopUrl,
 		noopInt,
 		rchan) {
-		w.Stop()
+		// Send the input
+		schan <- u
+		// Read the result
+		<-rchan
+		// Both methods of signalling closure
+		if i%2 == 0 {
+			w.Stop()
+		} else {
+			close(schan)
+		}
+		w.Wait()
 	}
 }
 
@@ -151,5 +167,22 @@ func TestMangle(t *testing.T) {
 		if !strings.Contains(r, foo) {
 			t.Errorf("Expected %s within %s", foo, r)
 		}
+	}
+}
+
+type FakePageWorker struct{}
+
+func (*FakePageWorker) Eligible(_ *http.Response) bool {
+	return true
+}
+
+func (*FakePageWorker) Handle(_ *url.URL, _ io.Reader) {}
+
+func TestSetPageWorker(t *testing.T) {
+	w := &Worker{}
+	pw := &FakePageWorker{}
+	w.SetPageWorker(pw)
+	if w.pageWorker != pw {
+		t.Fatalf("Pageworker not properly set.")
 	}
 }
