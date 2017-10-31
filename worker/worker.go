@@ -62,6 +62,8 @@ type Worker struct {
 	stop chan bool
 	// Request for redirection
 	redir *http.Request
+	// Channel to signal worker stopping
+	waitq chan bool
 }
 
 // Construct a worker with given settings.
@@ -79,6 +81,7 @@ func NewWorker(settings *ss.ScanSettings,
 		done:     done,
 		rchan:    rchan,
 		stop:     make(chan bool),
+		waitq:    make(chan bool),
 	}
 
 	// Install redirect handler
@@ -95,13 +98,18 @@ func (w *Worker) SetPageWorker(pw PageWorker) {
 	w.pageWorker = pw
 }
 
+// Run the worker, processing input from a channel until either signalled to
+// stop or the input channel is closed.
 func (w *Worker) Run() {
+	defer func() {
+		w.waitq <- true
+	}()
 	for true {
 		select {
 		case <-w.stop:
 			return
 		case task, ok := <-w.src:
-			if !ok {
+			if !ok { // channel closed
 				return
 			}
 			w.HandleURL(task)
@@ -115,6 +123,10 @@ func (w *Worker) RunInBackground() {
 
 func (w *Worker) Stop() {
 	w.stop <- true
+}
+
+func (w *Worker) Wait() {
+	<-w.waitq
 }
 
 func (w *Worker) HandleURL(task *url.URL) {
