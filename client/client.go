@@ -58,6 +58,23 @@ func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
 	if err != nil {
 		return resp, err
 	}
+	// Check if we can bypass auth checks via X-Forwarded-For & X-Real-IP
+        if (resp.StatusCode>= 400) && (resp.StatusCode <600){
+                switch resp.StatusCode{
+                case 401,403,504,511:
+                        req = c.makeRequest(u, method)
+                        req.Header.Add("X-Forwarded-For","127.0.0.1")
+                        req.Header.Add("X-Real-IP" ,"127.0.0.1")
+                        resp_temp, err := c.Client.Do(req)
+                        if (err == nil) &&  (resp_temp.StatusCode>=200) && (resp_temp.StatusCode<400){
+
+                                logging.Logf(logging.LogWarning,"Pontential AUTH BYPASS in " + u.String() + " via X-Forwarded-For/X-Real-IP: 127.0.0.1")
+                        }
+
+                default:
+
+                }
+        }
 	// Handle an authentication required response
 	if resp.StatusCode == 401 {
 		authHeader := resp.Header.Get("WWW-Authenticate")
