@@ -29,6 +29,8 @@ import (
 type Result struct {
 	// URL of resource
 	URL *url.URL
+	// Host header (if different)
+	Host string
 	// HTTP Status Code
 	Code int
 	// Error if one occurred
@@ -39,14 +41,19 @@ type Result struct {
 	Length int64
 	// Content-type header
 	ContentType string
+	// Known Headers
+	Header http.Header
+	// Group used for potentially bucketing results
+	ResultGroup string
 }
 
 // ResultsManager provides an interface for reading results from a channel and
 // writing them to some form of output.
 type ResultsManager interface {
 	// Run reads all of the Results in the given channel and writes them to an
-	// appropriate output sync.  Run should start its own goroutine for the bulk
+	// appropriate output sink.  Run should start its own goroutine for the bulk
 	// of the work.
+	// TODO: refactor to do pointers and avoid copying!
 	Run(<-chan Result)
 	// Wait until the channel has been read and output done.
 	Wait()
@@ -57,7 +64,7 @@ type baseResultsManager struct {
 }
 
 // Available output formats as strings.
-var OutputFormats = []string{"text", "csv", "html"}
+var OutputFormats = []string{"text", "csv", "html", "diff"}
 
 func init() {
 	ss.SetOutputFormats(OutputFormats)
@@ -103,6 +110,8 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 	case format == "html":
 		// TODO: do more than the first
 		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURLs[0]}, nil
+	case format == "diff":
+		return NewDiffResultsManager(fp), nil
 	}
 	return nil, fmt.Errorf("Invalid output type: %s", format)
 }

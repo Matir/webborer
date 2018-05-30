@@ -42,6 +42,8 @@ type ScanSettings struct {
 	ExcludePaths []string
 	// Proxies
 	Proxies []string
+	// Operating mode
+	RunMode RunModeOption
 	// Parse HTML for links?
 	ParseHTML bool
 	// Time to sleep between requests, per thread
@@ -69,7 +71,7 @@ type ScanSettings struct {
 	// Whether to include redirects in reporting
 	IncludeRedirects bool
 	// How to handle Robots.txt
-	RobotsMode int
+	RobotsMode RobotsModeOption
 	// Whether to allow upgrade from http to https
 	AllowHTTPSUpgrade bool
 	// Spider which http response codes
@@ -86,6 +88,21 @@ type ScanSettings struct {
 	configPath string
 	// Have flags been set up?
 	flagsSet bool
+}
+
+// Enum types
+type RunModeOption int
+type RobotsModeOption int
+
+// We have a couple of different runmodes
+const (
+	RunModeEnumeration = iota
+	RunModeDotProduct
+)
+
+var runModeStrings = [...]string{
+	"enumeration",
+	"dotproduct",
 }
 
 // We handle Robots.txt in various ways
@@ -177,22 +194,34 @@ func (f DurationFlag) Set(value string) error {
 	return nil
 }
 
-// RobotsFlag is a RobotsMode as a flag
-type robotsFlag struct {
-	mode *int
+func (f *RunModeOption) String() string {
+	if f == nil {
+		return runModeStrings[RunModeEnumeration]
+	}
+	return runModeStrings[*f]
 }
 
-func (f robotsFlag) String() string {
-	if f.mode == nil {
+func (f *RunModeOption) Set(value string) error {
+	for i, val := range runModeStrings {
+		if val == value {
+			*f = RunModeOption(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("Unknown Run Mode: %s", value)
+}
+
+func (f *RobotsModeOption) String() string {
+	if f == nil {
 		return robotsModeStrings[IgnoreRobots]
 	}
-	return robotsModeStrings[*(f.mode)]
+	return robotsModeStrings[*f]
 }
 
-func (f robotsFlag) Set(value string) error {
+func (f *RobotsModeOption) Set(value string) error {
 	for i, val := range robotsModeStrings {
 		if val == value {
-			*(f.mode) = i
+			*f = RobotsModeOption(i)
 			return nil
 		}
 	}
@@ -210,6 +239,7 @@ func NewScanSettings() *ScanSettings {
 		LogLevel:    "WARNING",
 		SpiderCodes: []int{200},
 		ProgressBar: true,
+		RunMode:     RunModeEnumeration,
 	}
 	settings.InitFlags()
 	return settings
@@ -236,6 +266,8 @@ func (settings *ScanSettings) InitFlags() {
 
 	baseUrlValue := StringSliceFlag{&settings.BaseURLs}
 	flag.Var(baseUrlValue, "url", "Starting `URL` & scopes.")
+	runModeHelp := fmt.Sprintf("Run `mode`. Options: [%s]", strings.Join(runModeStrings[:], ", "))
+	flag.Var(&settings.RunMode, "mode", runModeHelp)
 	flag.IntVar(&settings.Threads, "threads", runtime.NumCPU(), "Number of worker `threads`.")
 	flag.IntVar(&settings.Workers, "workers", runtime.NumCPU()*2, "Number of `workers`.")
 	excludePathValue := StringSliceFlag{&settings.ExcludePaths}
@@ -265,8 +297,7 @@ func (settings *ScanSettings) InitFlags() {
 	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
 	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
 	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings[:], ", "))
-	robotsModeVar := robotsFlag{&settings.RobotsMode}
-	flag.Var(robotsModeVar, "robots-mode", robotsModeHelp)
+	flag.Var(&settings.RobotsMode, "robots-mode", robotsModeHelp)
 	flag.StringVar(&settings.HTTPUsername, "http-username", "", "Username to be used for HTTP Auth")
 	flag.StringVar(&settings.HTTPPassword, "http-password", "", "Password to be used for HTTP Auth")
 	flag.BoolVar(&settings.ProgressBar, "progress", true, "Display a progress bar on stderr.")

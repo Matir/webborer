@@ -158,3 +158,13 @@ func EnableCPUProfiling() func() {
 	}
 	return nil
 }
+
+// Does a slice of strings contain a string
+func StringSliceContains(haystack []string, needle string) bool {
+	for _, v := range haystack {
+		if v == needle {
+			return true
+		}
+	}
+	return false
+}
