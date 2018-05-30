@@ -29,7 +29,7 @@ type HTMLResultsManager struct {
 	BaseURL string
 }
 
-func (rm *HTMLResultsManager) Run(res <-chan Result) {
+func (rm *HTMLResultsManager) Run(res <-chan *Result) {
 	go func() {
 		rm.start()
 		rm.writeHeader()
@@ -49,7 +49,7 @@ func (rm *HTMLResultsManager) Run(res <-chan Result) {
 			if r.Redir != nil {
 				continue
 			}
-			rm.writeResult(&r)
+			rm.writeResult(r)
 		}
 	}()
 }

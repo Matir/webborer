@@ -103,15 +103,15 @@ func (drm *DiffResultsManager) AddGroup(baselineResults ...Result) error {
 	return nil
 }
 
-func (drm *DiffResultsManager) Run(rChan <-chan Result) {
+func (drm *DiffResultsManager) Run(rChan <-chan *Result) {
 	go func() {
 		defer close(drm.done)
 		for result := range rChan {
 			if baseline, ok := drm.baselines[result.ResultGroup]; !ok {
 				// No baseline!
-				drm.Append(&result)
-			} else if !baseline.Matches(&result) {
-				drm.Append(&result)
+				drm.Append(result)
+			} else if !baseline.Matches(result) {
+				drm.Append(result)
 			}
 		}
 		// Write out results

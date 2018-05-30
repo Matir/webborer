@@ -53,7 +53,7 @@ type Worker struct {
 	// Function to mark work done
 	done workqueue.QueueDoneFunc
 	// Channel for scan results
-	rchan chan<- results.Result
+	rchan chan<- *results.Result
 	// Settings
 	settings *ss.ScanSettings
 	// HTML worker to parse page
@@ -72,7 +72,7 @@ func NewWorker(settings *ss.ScanSettings,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	rchan chan<- results.Result) *Worker {
+	rchan chan<- *results.Result) *Worker {
 	w := &Worker{
 		client:   factory.Get(),
 		settings: settings,
@@ -173,7 +173,7 @@ func (w *Worker) TryURL(task *url.URL) bool {
 	tryMangle := false
 	w.redir = nil
 	if resp, err := w.client.RequestURL(task); err != nil && w.redir == nil {
-		result := results.Result{URL: task, Error: err}
+		result := &results.Result{URL: task, Error: err}
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
@@ -196,7 +196,7 @@ func (w *Worker) TryURL(task *url.URL) bool {
 		if w.redir != nil {
 			redir = w.redir.URL
 		}
-		w.rchan <- results.Result{
+		w.rchan <- &results.Result{
 			URL:         task,
 			Code:        resp.StatusCode,
 			Redir:       redir,
@@ -227,7 +227,7 @@ func StartWorkers(settings *ss.ScanSettings,
 	src <-chan *url.URL,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	rchan chan<- results.Result) []*Worker {
+	rchan chan<- *results.Result) []*Worker {
 	count := settings.Workers
 	workers := make([]*Worker, count)
 	for i := 0; i < count; i++ {

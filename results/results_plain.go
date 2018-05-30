@@ -30,7 +30,7 @@ type PlainResultsManager struct {
 	redirs bool
 }
 
-func (rm *PlainResultsManager) Run(res <-chan Result) {
+func (rm *PlainResultsManager) Run(res <-chan *Result) {
 	go func() {
 		rm.start()
 		defer func() {

@@ -53,8 +53,7 @@ type ResultsManager interface {
 	// Run reads all of the Results in the given channel and writes them to an
 	// appropriate output sink.  Run should start its own goroutine for the bulk
 	// of the work.
-	// TODO: refactor to do pointers and avoid copying!
-	Run(<-chan Result)
+	Run(<-chan *Result)
 	// Wait until the channel has been read and output done.
 	Wait()
 }
@@ -81,7 +80,7 @@ func FoundSomething(code int) bool {
 }
 
 // Returns true if this result should be included in reports
-func ReportResult(res Result) bool {
+func ReportResult(res *Result) bool {
 	return res.Error == nil && FoundSomething(res.Code)
 }
 
