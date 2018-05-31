@@ -3,7 +3,7 @@ package results
 import (
 	"bufio"
 	"fmt"
-	"github.com/matir/webborer/util"
+	"github.com/Matir/webborer/util"
 	"os"
 	"strings"
 )

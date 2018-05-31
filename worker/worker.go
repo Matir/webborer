@@ -22,6 +22,7 @@ import (
 	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/results"
 	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
 	"io"
@@ -37,7 +38,7 @@ type Stoppable interface {
 
 type PageWorker interface {
 	Eligible(*http.Response) bool
-	Handle(*url.URL, io.Reader)
+	Handle(*task.Task, io.Reader)
 }
 
 // Workers do the work of connecting to the server, issuing the request, and
@@ -47,7 +48,7 @@ type Worker struct {
 	// client for connections
 	client client.Client
 	// Channel for URLs to scan
-	src <-chan *url.URL
+	src <-chan *task.Task
 	// Function to add future work
 	adder workqueue.QueueAddFunc
 	// Function to mark work done
@@ -69,7 +70,7 @@ type Worker struct {
 // Construct a worker with given settings.
 func NewWorker(settings *ss.ScanSettings,
 	factory client.ClientFactory,
-	src <-chan *url.URL,
+	src <-chan *task.Task,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
 	rchan chan<- *results.Result) *Worker {
@@ -112,7 +113,7 @@ func (w *Worker) Run() {
 			if !ok { // channel closed
 				return
 			}
-			w.HandleURL(task)
+			w.HandleTask(task)
 		}
 	}
 }
@@ -129,19 +130,19 @@ func (w *Worker) Wait() {
 	<-w.waitq
 }
 
-func (w *Worker) HandleURL(task *url.URL) {
+func (w *Worker) HandleTask(task *task.Task) {
 	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
-	withMangle := w.TryURL(task)
-	if !util.URLIsDir(task) {
+	withMangle := w.TryTask(task)
+	if !util.URLIsDir(task.URL) {
 		if withMangle {
-			w.TryMangleURL(task)
+			w.TryMangleTask(task)
 		}
-		if !util.URLHasExtension(task) {
+		if !util.URLHasExtension(task.URL) {
 			for _, ext := range w.settings.Extensions {
-				task := *task
-				task.Path += "." + ext
-				if w.TryURL(&task) {
-					w.TryMangleURL(&task)
+				task := task.Copy()
+				task.URL.Path += "." + ext
+				if w.TryTask(task) {
+					w.TryMangleTask(task)
 				}
 			}
 		}
@@ -150,30 +151,32 @@ func (w *Worker) HandleURL(task *url.URL) {
 	w.done(1)
 }
 
-func (w *Worker) TryMangleURL(task *url.URL) {
+func (w *Worker) TryMangleTask(task *task.Task) {
 	if !w.settings.Mangle {
 		return
 	}
-	clone := *task
-	spos := strings.LastIndex(clone.Path, "/")
+	clone := task.Copy()
+	spos := strings.LastIndex(clone.URL.Path, "/")
 	if spos == -1 {
 		return
 	}
-	dirname := clone.Path[:spos]
-	basename := clone.Path[spos+1:]
+	dirname := clone.URL.Path[:spos]
+	basename := clone.URL.Path[spos+1:]
 	for _, newname := range Mangle(basename) {
-		clone := clone
-		clone.Path = dirname + "/" + newname
-		w.TryURL(&clone)
+		clone := clone.Copy()
+		clone.URL.Path = dirname + "/" + newname
+		w.TryTask(clone)
 	}
 }
 
-func (w *Worker) TryURL(task *url.URL) bool {
+func (w *Worker) TryTask(task *task.Task) bool {
 	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
 	tryMangle := false
 	w.redir = nil
-	if resp, err := w.client.RequestURL(task); err != nil && w.redir == nil {
-		result := &results.Result{URL: task, Error: err}
+	// TODO: handle Host & Headers!
+	if resp, err := w.client.RequestURL(task.URL); err != nil && w.redir == nil {
+		// TODO: add host, headers, group, etc.
+		result := &results.Result{URL: task.URL, Error: err}
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
@@ -181,13 +184,15 @@ func (w *Worker) TryURL(task *url.URL) bool {
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
-		if util.URLIsDir(task) && w.KeepSpidering(resp.StatusCode) {
+		if util.URLIsDir(task.URL) && w.KeepSpidering(resp.StatusCode) {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
 			w.adder(task)
 		}
 		if w.redir != nil {
 			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
-			w.adder(w.redir.URL)
+			t := task.Copy()
+			t.URL = w.redir.URL
+			w.adder(t)
 		}
 		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
 			w.pageWorker.Handle(task, resp.Body)
@@ -197,7 +202,8 @@ func (w *Worker) TryURL(task *url.URL) bool {
 			redir = w.redir.URL
 		}
 		w.rchan <- &results.Result{
-			URL:         task,
+			URL:         task.URL,
+			Host:        task.Host,
 			Code:        resp.StatusCode,
 			Redir:       redir,
 			Length:      resp.ContentLength,
@@ -224,7 +230,7 @@ func (w *Worker) KeepSpidering(code int) bool {
 // Starts a batch of workers based on the relevant settings.
 func StartWorkers(settings *ss.ScanSettings,
 	factory client.ClientFactory,
-	src <-chan *url.URL,
+	src <-chan *task.Task,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
 	rchan chan<- *results.Result) []*Worker {

@@ -15,6 +15,7 @@
 package filter
 
 import (
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
 	"net/url"
@@ -46,14 +47,16 @@ func (e *Expander) ProcessWordlist() {
 	e.Wordlist = &newList
 }
 
-func (E *Expander) Expand(in <-chan *url.URL) <-chan *url.URL {
-	out := make(chan *url.URL, cap(in))
+func (E *Expander) Expand(in <-chan *task.Task) <-chan *task.Task {
+	out := make(chan *task.Task, cap(in))
 	go func() {
 		for e := range in {
 			out <- e
 			E.Adder(len(*E.Wordlist))
 			for _, word := range *E.Wordlist {
-				out <- ExtendURL(e, word)
+				t := e.Copy()
+				t.URL = ExtendURL(t.URL, word)
+				out <- t
 			}
 		}
 		close(out)
