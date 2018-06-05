@@ -33,8 +33,8 @@ func (t *Task) String() string {
 }
 
 func (t *Task) Copy() *Task {
-	newT := *t
-	tmpURL := *t.URL
-	newT.URL = &tmpURL
-	return &newT
+	newT := &Task{}
+	*newT = *t
+	*newT.URL = *t.URL
+	return newT
 }
