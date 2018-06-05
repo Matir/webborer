@@ -1,4 +1,4 @@
-// Copyright 2015 Google Inc. All Rights Reserved.
+// Copyright 2018 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,61 +16,10 @@ package filter
 
 import (
 	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/util"
-	"github.com/Matir/webborer/workqueue"
-	"net/url"
-	"strings"
 )
 
-// An Expander is responsible for taking input URLs and expanding them to
-// include all of the words in the wordlist.
-type Expander struct {
-	// List of words to expand
-	Wordlist *[]string
-	// Function to count new instances
-	Adder workqueue.QueueAddCount
-}
-
-// Update the wordlist to contain directory & non-directory entries
-func (e *Expander) ProcessWordlist() {
-	newList := make([]string, 0)
-	for _, w := range *e.Wordlist {
-		newList = append(newList, w)
-		if strings.Contains(w, ".") {
-			continue
-		}
-		if w[len(w)-1] == byte('/') {
-			continue
-		}
-		newList = append(newList, w+"/")
-	}
-	e.Wordlist = &newList
-}
-
-func (E *Expander) Expand(in <-chan *task.Task) <-chan *task.Task {
-	out := make(chan *task.Task, cap(in))
-	go func() {
-		for e := range in {
-			out <- e
-			E.Adder(len(*E.Wordlist))
-			for _, word := range *E.Wordlist {
-				t := e.Copy()
-				t.URL = ExtendURL(t.URL, word)
-				out <- t
-			}
-		}
-		close(out)
-	}()
-
-	return out
-}
-
-func ExtendURL(u *url.URL, tail string) *url.URL {
-	extended := *u
-	if !util.URLIsDir(u) {
-		extended.Path += "/" + tail
-	} else {
-		extended.Path += tail
-	}
-	return &extended
+// An Expander is responsible for taking input URLs and expanding them to the
+// various mutations to be processed.
+type Expander interface {
+	Expand(in <-chan *task.Task) <-chan *task.Task
 }

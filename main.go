@@ -92,7 +92,7 @@ func main() {
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
-	expander := filter.Expander{Wordlist: &words, Adder: queue.GetAddCount()}
+	expander := filter.WordlistExpander{Wordlist: &words, Adder: queue.GetAddCount()}
 	expander.ProcessWordlist()
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 
