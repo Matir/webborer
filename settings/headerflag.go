@@ -42,3 +42,7 @@ func (f *HeaderFlag) Set(value string) error {
 	http.Header(*f).Add(key, val)
 	return nil
 }
+
+func (f *HeaderFlag) Header() http.Header {
+	return http.Header(*f)
+}

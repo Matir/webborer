@@ -26,15 +26,21 @@ import (
 // include all of the words in the wordlist.
 type WordlistExpander struct {
 	// List of words to expand
-	Wordlist *[]string
+	Wordlist []string
 	// Function to count new instances
-	Adder workqueue.QueueAddCount
+	adder workqueue.QueueAddCount
+}
+
+func NewWordlistExpander(Wordlist []string) *WordlistExpander {
+	return &WordlistExpander{
+		Wordlist: Wordlist,
+	}
 }
 
 // Update the wordlist to contain directory & non-directory entries
 func (e *WordlistExpander) ProcessWordlist() {
 	newList := make([]string, 0)
-	for _, w := range *e.Wordlist {
+	for _, w := range e.Wordlist {
 		newList = append(newList, w)
 		if strings.Contains(w, ".") {
 			continue
@@ -44,17 +50,17 @@ func (e *WordlistExpander) ProcessWordlist() {
 		}
 		newList = append(newList, w+"/")
 	}
-	e.Wordlist = &newList
+	e.Wordlist = newList
 }
 
-func (E *WordlistExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
+func (e *WordlistExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
 	out := make(chan *task.Task, cap(in))
 	go func() {
-		for e := range in {
-			out <- e
-			E.Adder(len(*E.Wordlist))
-			for _, word := range *E.Wordlist {
-				t := e.Copy()
+		for it := range in {
+			out <- it
+			e.adder(len(e.Wordlist))
+			for _, word := range e.Wordlist {
+				t := it.Copy()
 				t.URL = ExtendURL(t.URL, word)
 				out <- t
 			}
@@ -63,6 +69,10 @@ func (E *WordlistExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
 	}()
 
 	return out
+}
+
+func (e *WordlistExpander) SetAddCount(adder workqueue.QueueAddCount) {
+	e.adder = adder
 }
 
 func ExtendURL(u *url.URL, tail string) *url.URL {

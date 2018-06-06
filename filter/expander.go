@@ -16,10 +16,12 @@ package filter
 
 import (
 	"github.com/Matir/webborer/task"
+	"github.com/Matir/webborer/workqueue"
 )
 
 // An Expander is responsible for taking input URLs and expanding them to the
 // various mutations to be processed.
 type Expander interface {
 	Expand(in <-chan *task.Task) <-chan *task.Task
+	SetAddCount(workqueue.QueueAddCount)
 }

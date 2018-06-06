@@ -95,7 +95,7 @@ func main() {
 	var expander filter.Expander
 	switch settings.RunMode {
 	case ss.RunModeEnumeration:
-		wlexpander := &filter.WordlistExpander{Wordlist: &words, Adder: queue.GetAddCount()}
+		wlexpander := filter.NewWordlistExpander(words)
 		wlexpander.ProcessWordlist()
 		expander = wlexpander
 	case ss.RunModeDotProduct:
@@ -104,6 +104,11 @@ func main() {
 	default:
 		panic("Unknown run mode!")
 	}
+	expander.SetAddCount(queue.GetAddCount())
+
+	headerExpander := filter.NewHeaderExpander(settings.OptionalHeader.Header())
+	headerExpander.SetAddCount(queue.GetAddCount())
+
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 
 	// Check robots mode
@@ -113,7 +118,10 @@ func main() {
 
 	// filter paths after expansion
 	logging.Debugf("Starting expansion and filtering...")
-	work := filter.RunFilter(expander.Expand(queue.GetWorkChan()))
+	workChan := queue.GetWorkChan()
+	workChan = expander.Expand(workChan)
+	workChan = headerExpander.Expand(workChan)
+	workChan = filter.RunFilter(workChan)
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
 	rchan := make(chan *results.Result, settings.QueueSize)
@@ -124,16 +132,17 @@ func main() {
 	}
 
 	logging.Logf(logging.LogDebug, "Starting %d workers...", settings.Workers)
-	worker.StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
+	worker.StartWorkers(settings, clientFactory, workChan, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
 
 	logging.Logf(logging.LogDebug, "Starting results manager...")
 	resultsManager.Run(rchan)
 
 	// Kick things off with the seed URL
 	logging.Logf(logging.LogDebug, "Adding starting URLs: %v", scope)
+	task.SetDefaultHeader(settings.Header.Header())
 	tasks := make([]*task.Task, 0, len(scope))
 	for _, s := range scope {
-		tasks = append(tasks, &task.Task{URL: s})
+		tasks = append(tasks, task.NewTaskFromURL(s))
 	}
 	queue.AddTasks(tasks...)
 

@@ -177,7 +177,7 @@ func (q *WorkQueue) SeedFromRobots(scope []*url.URL, clientFactory client.Client
 				pathURL := *scopeURL
 				pathURL.Path = path
 				// Filter will handle if this is out of scope
-				q.AddTasks(&task.Task{URL: scopeURL.ResolveReference(&pathURL)})
+				q.AddTasks(task.NewTaskFromURL(scopeURL.ResolveReference(&pathURL)))
 			}
 		}
 	}

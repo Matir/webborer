@@ -26,10 +26,12 @@ type Task struct {
 	Header http.Header
 }
 
+var defaultHeader http.Header
+
 func NewTaskFromURL(src *url.URL) *Task {
 	return &Task{
 		URL:    src,
-		Header: make(http.Header),
+		Header: defaultHeader,
 	}
 }
 
@@ -50,4 +52,8 @@ func (t *Task) Copy() *Task {
 		newT.Header[k] = v[:] // Need to copy the slice
 	}
 	return newT
+}
+
+func SetDefaultHeader(header http.Header) {
+	defaultHeader = header
 }
