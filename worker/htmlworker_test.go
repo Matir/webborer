@@ -15,6 +15,7 @@
 package worker
 
 import (
+	"github.com/matir/webborer/task"
 	"net/url"
 	"strings"
 	"testing"
@@ -50,8 +51,8 @@ var smallHTMLDoc = `
 
 func TestHandle(t *testing.T) {
 	// Setup environment
-	results := make([]*url.URL, 0)
-	adder := func(f ...*url.URL) {
+	results := make([]*task.Task, 0)
+	adder := func(f ...*task.Task) {
 		results = append(results, f...)
 	}
 	htmlWorker := NewHTMLWorker(adder)
@@ -61,7 +62,8 @@ func TestHandle(t *testing.T) {
 	}
 
 	// Run the worker
-	htmlWorker.Handle(base, strings.NewReader(smallHTMLDoc))
+	madeTask := task.NewTaskFromURL(base)
+	htmlWorker.Handle(madeTask, strings.NewReader(smallHTMLDoc))
 
 	// Make slice of expected URL
 	expected := make([]*url.URL, 0)
@@ -83,7 +85,11 @@ func TestHandle(t *testing.T) {
 	}
 
 	// Tests
-	if !compareURLSlice(expected, results) {
+	uResults := make([]*url.URL, 0, len(results))
+	for _, v := range results {
+		uResults = append(uResults, v.URL)
+	}
+	if !compareURLSlice(expected, uResults) {
 		t.Fatalf("Results do not match.  Expected: %v, got %v.", expected, results)
 	}
 }

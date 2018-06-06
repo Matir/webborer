@@ -23,21 +23,21 @@ import (
 func TestProcessWordlist(t *testing.T) {
 	wl := []string{"a", "b/", "c.txt"}
 	expected := []string{"a", "a/", "b/", "c.txt"}
-	expander := &WordlistExpander{Wordlist: &wl}
+	expander := &WordlistExpander{Wordlist: wl}
 	expander.ProcessWordlist()
-	if len(*expander.Wordlist) != len(expected) {
-		t.Fatalf("Length of wordlist not expected: %d vs %d", len(*expander.Wordlist), len(expected))
+	if len(expander.Wordlist) != len(expected) {
+		t.Fatalf("Length of wordlist not expected: %d vs %d", len(expander.Wordlist), len(expected))
 	}
 	for i, e := range expected {
-		if (*expander.Wordlist)[i] != e {
-			t.Errorf("Wordlist element mismatch: %s %s", e, (*expander.Wordlist)[i])
+		if (expander.Wordlist)[i] != e {
+			t.Errorf("Wordlist element mismatch: %s %s", e, (expander.Wordlist)[i])
 		}
 	}
 }
 
 func TestExpand(t *testing.T) {
 	wl := []string{"a", "b"}
-	expander := &WordlistExpander{Wordlist: &wl, Adder: func(_ int) {}}
+	expander := &WordlistExpander{Wordlist: wl, adder: func(_ int) {}}
 	ch := make(chan *task.Task, 5)
 	paths := []string{"/foo", "/bar/"}
 	expected := []string{"/foo", "/foo/a", "/foo/b", "/bar/", "/bar/a", "/bar/b"}
