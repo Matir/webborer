@@ -18,12 +18,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 )
 
 type Task struct {
 	URL    *url.URL
 	Host   string
 	Header http.Header
+
+	// Mutex to protect map & data structures
+	sync.Mutex
 }
 
 var defaultHeader http.Header
@@ -44,9 +48,13 @@ func (t *Task) String() string {
 }
 
 func (t *Task) Copy() *Task {
-	newT := &Task{}
-	*newT = *t
-	*newT.URL = *t.URL
+	t.Lock()
+	defer t.Unlock()
+	tmpU := *t.URL
+	newT := &Task{
+		Host: t.Host,
+		URL:  &tmpU,
+	}
 	newT.Header = make(http.Header)
 	for k, v := range t.Header {
 		newT.Header[k] = v[:] // Need to copy the slice
