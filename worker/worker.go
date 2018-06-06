@@ -174,7 +174,7 @@ func (w *Worker) TryTask(task *task.Task) bool {
 	tryMangle := false
 	w.redir = nil
 	// TODO: handle Host & Headers!
-	if resp, err := w.client.RequestURL(task.URL); err != nil && w.redir == nil {
+	if resp, err := w.client.Request(task.URL, task.Host, task.Header); err != nil && w.redir == nil {
 		// TODO: add host, headers, group, etc.
 		result := &results.Result{URL: task.URL, Error: err}
 		if resp != nil {
@@ -219,6 +219,9 @@ func (w *Worker) TryTask(task *task.Task) bool {
 
 // Should we keep spidering from this code?
 func (w *Worker) KeepSpidering(code int) bool {
+	if w.settings.RunMode == ss.RunModeDotProduct {
+		return false
+	}
 	for _, v := range w.settings.SpiderCodes {
 		if code == v {
 			return true

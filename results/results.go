@@ -47,6 +47,18 @@ type Result struct {
 	ResultGroup string
 }
 
+func (r *Result) String() string {
+	var host string
+	if r.Host != "" {
+		host = fmt.Sprintf(" (%s)", r.Host)
+	}
+	return fmt.Sprintf(
+		"%s%s: %d",
+		r.URL.String(),
+		host,
+		r.Code)
+}
+
 // ResultsManager provides an interface for reading results from a channel and
 // writing them to some form of output.
 type ResultsManager interface {
@@ -87,7 +99,7 @@ func ReportResult(res *Result) bool {
 // Construct a ResultsManager for the given settings in the ss.ScanSettings.
 // Returns an object satisfying the ResultsManager interface or an error.
 func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
-	var writer io.Writer
+	var writer io.WriteCloser
 	var fp *os.File
 	var err error
 
@@ -107,10 +119,10 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 	case format == "csv":
 		return &CSVResultsManager{writer: csv.NewWriter(writer), fp: fp}, nil
 	case format == "html":
-		// TODO: do more than the first
+		// TODO: do more than the first BaseURL
 		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURLs[0]}, nil
 	case format == "diff":
-		return NewDiffResultsManager(fp), nil
+		return NewDiffResultsManager(writer), nil
 	}
 	return nil, fmt.Errorf("Invalid output type: %s", format)
 }

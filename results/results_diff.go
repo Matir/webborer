@@ -3,8 +3,9 @@ package results
 import (
 	"bufio"
 	"fmt"
+	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/util"
-	"os"
+	"io"
 	"strings"
 )
 
@@ -26,10 +27,10 @@ type DiffResultsManager struct {
 	baselines map[string]*BaselineResult
 	done      chan interface{}
 	keep      map[string][]*Result
-	fp        *os.File
+	fp        io.WriteCloser
 }
 
-func NewDiffResultsManager(fp *os.File) *DiffResultsManager {
+func NewDiffResultsManager(fp io.WriteCloser) *DiffResultsManager {
 	return &DiffResultsManager{
 		baselines: make(map[string]*BaselineResult),
 		done:      make(chan interface{}),
@@ -105,17 +106,23 @@ func (drm *DiffResultsManager) AddGroup(baselineResults ...Result) error {
 
 func (drm *DiffResultsManager) Run(rChan <-chan *Result) {
 	go func() {
-		defer close(drm.done)
+		defer func() {
+			if err := drm.WriteResults(); err != nil {
+				logging.Errorf("Unable to write results: %s", err.Error())
+			}
+			close(drm.done)
+		}()
 		for result := range rChan {
 			if baseline, ok := drm.baselines[result.ResultGroup]; !ok {
 				// No baseline!
+				logging.Debugf("No baseline for group %s", result.ResultGroup)
 				drm.Append(result)
 			} else if !baseline.Matches(result) {
 				drm.Append(result)
+			} else {
+				logging.Debugf("Not logging result: %s", result.String())
 			}
 		}
-		// Write out results
-		drm.WriteResults()
 	}()
 }
 
@@ -125,12 +132,14 @@ func (drm *DiffResultsManager) Wait() {
 
 func (drm *DiffResultsManager) Append(result *Result) {
 	if _, ok := drm.keep[result.ResultGroup]; !ok {
+		logging.Debugf("Creating new result group: %s", result.ResultGroup)
 		drm.keep[result.ResultGroup] = make([]*Result, 0)
 	}
 	drm.keep[result.ResultGroup] = append(drm.keep[result.ResultGroup], result)
 }
 
 func (drm *DiffResultsManager) WriteResults() error {
+	logging.Debugf("Writing results for DRM. %d groups.", len(drm.keep))
 	fp := bufio.NewWriter(drm.fp)
 	defer func() {
 		fp.Flush()
