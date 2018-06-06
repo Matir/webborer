@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -33,15 +32,15 @@ import (
 // into setup functions to get the desired behavior.
 type ScanSettings struct {
 	// Starting point and scope of scan
-	BaseURLs []string
+	BaseURLs StringSliceFlag
 	// Number of threads to run
 	Threads int
 	// Number of workers to run
 	Workers int
 	// Exclusions
-	ExcludePaths []string
+	ExcludePaths StringSliceFlag
 	// Proxies
-	Proxies []string
+	Proxies StringSliceFlag
 	// Operating mode
 	RunMode RunModeOption
 	// Parse HTML for links?
@@ -55,7 +54,7 @@ type ScanSettings struct {
 	// Wordlist for scanning
 	WordlistPath string
 	// Extensions for mangling
-	Extensions []string
+	Extensions StringSliceFlag
 	// Whether or not to mangle
 	Mangle bool
 	// How long should internal queues be sized
@@ -75,11 +74,15 @@ type ScanSettings struct {
 	// Whether to allow upgrade from http to https
 	AllowHTTPSUpgrade bool
 	// Spider which http response codes
-	SpiderCodes []int
+	SpiderCodes IntSliceFlag
 	// HTTP Auth Username
 	HTTPUsername string
 	// HTTP Auth Password
 	HTTPPassword string
+	// Headers *always* sent
+	Header HeaderFlag
+	// Headers sometimes sent
+	OptionalHeader HeaderFlag
 	// Progress bar
 	ProgressBar bool
 	// Whether or not to do CPU Profiling
@@ -90,156 +93,23 @@ type ScanSettings struct {
 	flagsSet bool
 }
 
-// Enum types
-type RunModeOption int
-type RobotsModeOption int
-
-// We have a couple of different runmodes
-const (
-	RunModeEnumeration = iota
-	RunModeDotProduct
-)
-
-var runModeStrings = [...]string{
-	"enumeration",
-	"dotproduct",
-}
-
-// We handle Robots.txt in various ways
-const (
-	IgnoreRobots = iota
-	ObeyRobots
-	SeedRobots
-	robotsModeMax
-)
-
-var robotsModeStrings = [...]string{
-	"ignore",
-	"obey",
-	"seed",
-}
-
 var DefaultUserAgent = "WebBorer 0.01"
 var outputFormats []string
-
-// StringSliceFlag is a flag.Value that takes a comma-separated string and turns
-// it into a slice of strings.
-type StringSliceFlag struct {
-	slice *[]string
-}
-
-// Satisfies flag.Value interface and splits value on commas
-func (f StringSliceFlag) String() string {
-	if f.slice == nil {
-		return ""
-	}
-	return strings.Join(*f.slice, ",")
-}
-
-func (f StringSliceFlag) Set(value string) error {
-	*f.slice = strings.Split(value, ",")
-	return nil
-}
-
-// IntSliceFlag is a flag.Value that takes a comma-separated string and turns
-// it into a slice of ints.
-type IntSliceFlag struct {
-	slice *[]int
-}
-
-func (f IntSliceFlag) String() string {
-	if f.slice == nil {
-		return ""
-	}
-	tmpslice := []string{}
-	for _, v := range *f.slice {
-		tmpslice = append(tmpslice, strconv.Itoa(v))
-	}
-	return strings.Join(tmpslice, ",")
-}
-
-func (f IntSliceFlag) Set(value string) error {
-	ints := []int{}
-	for _, v := range strings.Split(value, ",") {
-		if i, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
-			ints = append(ints, i)
-		} else {
-			return fmt.Errorf("Unable to parse %s as int.", v)
-		}
-	}
-	*f.slice = ints
-	return nil
-}
-
-// DurationFlag is a flag.Value that takes a Duration spec (see time.Duration)
-// and parses it and stores the Duration.
-type DurationFlag struct {
-	d *time.Duration
-}
-
-// Satisfies flag.Value interface and converts to a duration based on seconds
-func (f DurationFlag) String() string {
-	if f.d == nil {
-		return ""
-	}
-	return f.d.String()
-}
-
-func (f DurationFlag) Set(value string) error {
-	if d, err := time.ParseDuration(value); err != nil {
-		return err
-	} else {
-		*f.d = d
-	}
-	return nil
-}
-
-func (f *RunModeOption) String() string {
-	if f == nil {
-		return runModeStrings[RunModeEnumeration]
-	}
-	return runModeStrings[*f]
-}
-
-func (f *RunModeOption) Set(value string) error {
-	for i, val := range runModeStrings {
-		if val == value {
-			*f = RunModeOption(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("Unknown Run Mode: %s", value)
-}
-
-func (f *RobotsModeOption) String() string {
-	if f == nil {
-		return robotsModeStrings[IgnoreRobots]
-	}
-	return robotsModeStrings[*f]
-}
-
-func (f *RobotsModeOption) Set(value string) error {
-	for i, val := range robotsModeStrings {
-		if val == value {
-			*f = RobotsModeOption(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("Unknown Robots Mode: %s", value)
-}
 
 // Constructs a ScanSettings struct with all of the defaults to be used.
 func NewScanSettings() *ScanSettings {
 	settings := &ScanSettings{
-		Threads:     runtime.NumCPU(),
-		Extensions:  []string{"html", "php", "asp", "aspx"},
-		Mangle:      true,
-		QueueSize:   1024,
-		Timeout:     30 * time.Second,
-		LogLevel:    "WARNING",
-		SpiderCodes: []int{200},
-		ProgressBar: true,
-		RunMode:     RunModeEnumeration,
+		Threads:        runtime.NumCPU(),
+		Extensions:     []string{"html", "php", "asp", "aspx"},
+		Mangle:         true,
+		QueueSize:      1024,
+		Timeout:        30 * time.Second,
+		LogLevel:       "WARNING",
+		SpiderCodes:    IntSliceFlag{200},
+		ProgressBar:    true,
+		RunMode:        RunModeEnumeration,
+		Header:         make(HeaderFlag),
+		OptionalHeader: make(HeaderFlag),
 	}
 	settings.InitFlags()
 	return settings
@@ -264,25 +134,23 @@ func (settings *ScanSettings) InitFlags() {
 		return
 	}
 
-	baseUrlValue := StringSliceFlag{&settings.BaseURLs}
-	flag.Var(baseUrlValue, "url", "Starting `URL` & scopes.")
+	flag.Var(&settings.BaseURLs, "url", "Starting `URL` & scopes.")
 	runModeHelp := fmt.Sprintf("Run `mode`. Options: [%s]", strings.Join(runModeStrings[:], ", "))
 	flag.Var(&settings.RunMode, "mode", runModeHelp)
 	flag.IntVar(&settings.Threads, "threads", runtime.NumCPU(), "Number of worker `threads`.")
 	flag.IntVar(&settings.Workers, "workers", runtime.NumCPU()*2, "Number of `workers`.")
-	excludePathValue := StringSliceFlag{&settings.ExcludePaths}
-	flag.Var(excludePathValue, "exclude", "List of `paths` to exclude from search.")
+	flag.Var(&settings.ExcludePaths, "exclude", "List of `paths` to exclude from search.")
 	flag.BoolVar(&settings.ParseHTML, "html", true, "Parse HTML documents for links to follow.")
 	flag.BoolVar(&settings.AllowHTTPSUpgrade, "allow-upgrade", false, "Allow HTTP->HTTPS upgrades.")
 	sleepTimeValue := DurationFlag{&settings.SleepTime}
 	flag.Var(sleepTimeValue, "sleep", "Time (as `duration`) to sleep between requests.")
 	flag.StringVar(&settings.LogfilePath, "logfile", "", "Logfile `filename` (defaults to stderr)")
 	flag.StringVar(&settings.WordlistPath, "wordlist", "", "Wordlist `filename` to use (default built-in)")
-	extensionValue := StringSliceFlag{&settings.Extensions}
-	flag.Var(extensionValue, "extensions", "List of `extensions` to mangle with.")
+	flag.Var(&settings.Extensions, "extensions", "List of `extensions` to mangle with.")
 	flag.BoolVar(&settings.Mangle, "mangle", true, "Mangle by adding extensions.")
-	proxyValue := StringSliceFlag{&settings.Proxies}
-	flag.Var(proxyValue, "proxy", "Proxy or `proxies` to use.")
+	flag.Var(&settings.Header, "header", "Headers to send with each request.")
+	flag.Var(&settings.OptionalHeader, "optional-header", "Headers to try sending one at a time.")
+	flag.Var(&settings.Proxies, "proxy", "Proxy or `proxies` to use.")
 	timeoutValue := DurationFlag{&settings.Timeout}
 	flag.Var(timeoutValue, "timeout", "Network connection timeout (`duration`).")
 	if len(outputFormats) > 1 {
@@ -294,8 +162,7 @@ func (settings *ScanSettings) InitFlags() {
 	flag.StringVar(&settings.LogLevel, "loglevel", settings.LogLevel, loglevelHelp)
 	flag.StringVar(&settings.UserAgent, "user-agent", DefaultUserAgent, "`User-Agent` for requests")
 	flag.BoolVar(&settings.IncludeRedirects, "include-redirects", false, "Include redirects in reports.")
-	spiderCodesValue := IntSliceFlag{&settings.SpiderCodes}
-	flag.Var(spiderCodesValue, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
+	flag.Var(&settings.SpiderCodes, "spider-codes", "HTTP Response Codes to Continue Spidering On.")
 	robotsModeHelp := fmt.Sprintf("Robots `mode`.  Options: [%s]", strings.Join(robotsModeStrings[:], ", "))
 	flag.Var(&settings.RobotsMode, "robots-mode", robotsModeHelp)
 	flag.StringVar(&settings.HTTPUsername, "http-username", "", "Username to be used for HTTP Auth")

@@ -12,42 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+// Package settings provides a central interface to webborer settings.
+package settings
 
 import (
 	"fmt"
+	"github.com/Matir/webborer/util"
 	"net/http"
-	"net/url"
+	"strings"
 )
 
-type Task struct {
-	URL    *url.URL
-	Host   string
-	Header http.Header
+// HeaderFlag is an http.Header wrapped in the flag.Value interface.
+type HeaderFlag http.Header
+
+func (f *HeaderFlag) String() string {
+	return util.StringHeader(http.Header(*f), " ")
 }
 
-func NewTaskFromURL(src *url.URL) *Task {
-	return &Task{
-		URL:    src,
-		Header: make(http.Header),
+func (f *HeaderFlag) Set(value string) error {
+	if f == nil {
+		panic("Nil HeaderFlag object in set!")
 	}
-}
-
-func (t *Task) String() string {
-	base := t.URL.String()
-	if t.Host != "" {
-		base = fmt.Sprintf("%s (%s)", base, t.Host)
+	pieces := strings.SplitN(value, ":", 2)
+	if len(pieces) != 2 {
+		return fmt.Errorf("Header format is key: value")
 	}
-	return base
-}
-
-func (t *Task) Copy() *Task {
-	newT := &Task{}
-	*newT = *t
-	*newT.URL = *t.URL
-	newT.Header = make(http.Header)
-	for k, v := range t.Header {
-		newT.Header[k] = v[:] // Need to copy the slice
-	}
-	return newT
+	key := strings.TrimSpace(pieces[0])
+	val := strings.TrimSpace(pieces[1])
+	http.Header(*f).Add(key, val)
+	return nil
 }

@@ -12,42 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+// Package settings provides a central interface to webborer settings.
+package settings
 
 import (
-	"fmt"
-	"net/http"
-	"net/url"
+	"strings"
 )
 
-type Task struct {
-	URL    *url.URL
-	Host   string
-	Header http.Header
+// StringSliceFlag is a flag.Value that takes a comma-separated string and turns
+// it into a slice of strings.
+type StringSliceFlag []string
+
+// Satisfies flag.Value interface and splits value on commas
+func (f *StringSliceFlag) String() string {
+	if f == nil {
+		return ""
+	}
+	return strings.Join(*f, ",")
 }
 
-func NewTaskFromURL(src *url.URL) *Task {
-	return &Task{
-		URL:    src,
-		Header: make(http.Header),
-	}
-}
-
-func (t *Task) String() string {
-	base := t.URL.String()
-	if t.Host != "" {
-		base = fmt.Sprintf("%s (%s)", base, t.Host)
-	}
-	return base
-}
-
-func (t *Task) Copy() *Task {
-	newT := &Task{}
-	*newT = *t
-	*newT.URL = *t.URL
-	newT.Header = make(http.Header)
-	for k, v := range t.Header {
-		newT.Header[k] = v[:] // Need to copy the slice
-	}
-	return newT
+func (f *StringSliceFlag) Set(value string) error {
+	*f = append(*f, strings.Split(value, ",")...)
+	return nil
 }

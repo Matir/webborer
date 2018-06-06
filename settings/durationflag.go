@@ -12,42 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+// Package settings provides a central interface to webborer settings.
+package settings
 
 import (
-	"fmt"
-	"net/http"
-	"net/url"
+	"time"
 )
 
-type Task struct {
-	URL    *url.URL
-	Host   string
-	Header http.Header
+// DurationFlag is a flag.Value that takes a Duration spec (see time.Duration)
+// and parses it and stores the Duration.
+type DurationFlag struct {
+	d *time.Duration
 }
 
-func NewTaskFromURL(src *url.URL) *Task {
-	return &Task{
-		URL:    src,
-		Header: make(http.Header),
+// Satisfies flag.Value interface and converts to a duration based on seconds
+func (f DurationFlag) String() string {
+	if f.d == nil {
+		return ""
 	}
+	return f.d.String()
 }
 
-func (t *Task) String() string {
-	base := t.URL.String()
-	if t.Host != "" {
-		base = fmt.Sprintf("%s (%s)", base, t.Host)
+func (f DurationFlag) Set(value string) error {
+	if d, err := time.ParseDuration(value); err != nil {
+		return err
+	} else {
+		*f.d = d
 	}
-	return base
-}
-
-func (t *Task) Copy() *Task {
-	newT := &Task{}
-	*newT = *t
-	*newT.URL = *t.URL
-	newT.Header = make(http.Header)
-	for k, v := range t.Header {
-		newT.Header[k] = v[:] // Need to copy the slice
-	}
-	return newT
+	return nil
 }

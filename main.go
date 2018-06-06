@@ -92,8 +92,18 @@ func main() {
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
-	expander := filter.WordlistExpander{Wordlist: &words, Adder: queue.GetAddCount()}
-	expander.ProcessWordlist()
+	var expander filter.Expander
+	switch settings.RunMode {
+	case ss.RunModeEnumeration:
+		wlexpander := &filter.WordlistExpander{Wordlist: &words, Adder: queue.GetAddCount()}
+		wlexpander.ProcessWordlist()
+		expander = wlexpander
+	case ss.RunModeDotProduct:
+		dpexpander := filter.NewDotProductExpander(words)
+		expander = dpexpander
+	default:
+		panic("Unknown run mode!")
+	}
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 
 	// Check robots mode
