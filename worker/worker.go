@@ -240,7 +240,7 @@ func StartWorkers(settings *ss.ScanSettings,
 	for i := 0; i < count; i++ {
 		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
-		if settings.ParseHTML {
+		if settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration {
 			workers[i].SetPageWorker(NewHTMLWorker(adder))
 		}
 	}
