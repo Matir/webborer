@@ -17,11 +17,11 @@
 package workqueue
 
 import (
-	"github.com/Matir/webborer/client"
-	"github.com/Matir/webborer/logging"
-	"github.com/Matir/webborer/robots"
-	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/util"
+	"github.com/matir/webborer/client"
+	"github.com/matir/webborer/logging"
+	"github.com/matir/webborer/robots"
+	"github.com/matir/webborer/task"
+	"github.com/matir/webborer/util"
 	"net/url"
 	"sync"
 )

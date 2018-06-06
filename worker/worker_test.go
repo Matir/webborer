@@ -15,9 +15,9 @@
 package worker
 
 import (
-	"github.com/Matir/webborer/client/mock"
-	"github.com/Matir/webborer/results"
-	"github.com/Matir/webborer/settings"
+	"github.com/matir/webborer/client/mock"
+	"github.com/matir/webborer/results"
+	"github.com/matir/webborer/settings"
 	"io"
 	"net/http"
 	"net/url"

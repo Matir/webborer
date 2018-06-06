@@ -15,10 +15,10 @@
 package worker
 
 import (
-	"github.com/Matir/webborer/logging"
-	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/util"
-	"github.com/Matir/webborer/workqueue"
+	"github.com/matir/webborer/logging"
+	"github.com/matir/webborer/task"
+	"github.com/matir/webborer/util"
+	"github.com/matir/webborer/workqueue"
 	"golang.org/x/net/html"
 	"io"
 	"net/http"

@@ -17,7 +17,7 @@ package robots
 
 import (
 	"bytes"
-	"github.com/Matir/webborer/client"
+	"github.com/matir/webborer/client"
 	"io/ioutil"
 	"net/url"
 )

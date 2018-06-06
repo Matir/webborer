@@ -15,8 +15,8 @@
 package filter
 
 import (
-	"github.com/Matir/webborer/client/mock"
-	"github.com/Matir/webborer/settings"
+	"github.com/matir/webborer/client/mock"
+	"github.com/matir/webborer/settings"
 	"net/url"
 	"testing"
 )

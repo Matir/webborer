@@ -15,7 +15,7 @@
 package robots
 
 import (
-	"github.com/Matir/webborer/client/mock"
+	"github.com/matir/webborer/client/mock"
 	"io/ioutil"
 	"net/http"
 	"net/url"
