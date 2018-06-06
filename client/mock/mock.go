@@ -20,7 +20,7 @@ package mock
 import (
 	"bytes"
 	"errors"
-	"github.com/Matir/webborer/client"
+	"github.com/matir/webborer/client"
 	"io/ioutil"
 	"net/http"
 	"net/url"
