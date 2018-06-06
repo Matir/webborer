@@ -47,6 +47,19 @@ type Result struct {
 	ResultGroup string
 }
 
+func NewResult(URL *url.URL, host string) *Result {
+	rv := &Result{
+		URL:  URL,
+		Host: host,
+	}
+	rv.ResultGroup = GetResultGroup(rv)
+	return rv
+}
+
+type ResultGroupGenerator func(*Result) string
+
+var GetResultGroup ResultGroupGenerator = func(*Result) string { return "" }
+
 func (r *Result) String() string {
 	var host string
 	if r.Host != "" {
@@ -113,6 +126,7 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 			writer = fp
 		}
 	}
+
 	switch {
 	case format == "text":
 		return &PlainResultsManager{writer: writer, fp: fp, redirs: settings.IncludeRedirects}, nil
@@ -122,8 +136,10 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 		// TODO: do more than the first BaseURL
 		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURLs[0]}, nil
 	case format == "diff":
+		GetResultGroup = func(r *Result) string { return r.URL.Host }
 		return NewDiffResultsManager(writer), nil
 	}
+
 	return nil, fmt.Errorf("Invalid output type: %s", format)
 }
 

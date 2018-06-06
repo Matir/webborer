@@ -109,11 +109,11 @@ func (w *Worker) Run() {
 		select {
 		case <-w.stop:
 			return
-		case task, ok := <-w.src:
+		case t, ok := <-w.src:
 			if !ok { // channel closed
 				return
 			}
-			w.HandleTask(task)
+			w.HandleTask(t)
 		}
 	}
 }
@@ -130,19 +130,19 @@ func (w *Worker) Wait() {
 	<-w.waitq
 }
 
-func (w *Worker) HandleTask(task *task.Task) {
-	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
-	withMangle := w.TryTask(task)
-	if !util.URLIsDir(task.URL) {
+func (w *Worker) HandleTask(t *task.Task) {
+	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", t.String())
+	withMangle := w.TryTask(t)
+	if !util.URLIsDir(t.URL) {
 		if withMangle {
-			w.TryMangleTask(task)
+			w.TryMangleTask(t)
 		}
-		if !util.URLHasExtension(task.URL) {
+		if !util.URLHasExtension(t.URL) {
 			for _, ext := range w.settings.Extensions {
-				task := task.Copy()
-				task.URL.Path += "." + ext
-				if w.TryTask(task) {
-					w.TryMangleTask(task)
+				t := t.Copy()
+				t.URL.Path += "." + ext
+				if w.TryTask(t) {
+					w.TryMangleTask(t)
 				}
 			}
 		}
@@ -151,11 +151,11 @@ func (w *Worker) HandleTask(task *task.Task) {
 	w.done(1)
 }
 
-func (w *Worker) TryMangleTask(task *task.Task) {
+func (w *Worker) TryMangleTask(t *task.Task) {
 	if !w.settings.Mangle {
 		return
 	}
-	clone := task.Copy()
+	clone := t.Copy()
 	spos := strings.LastIndex(clone.URL.Path, "/")
 	if spos == -1 {
 		return
@@ -169,13 +169,14 @@ func (w *Worker) TryMangleTask(task *task.Task) {
 	}
 }
 
-func (w *Worker) TryTask(task *task.Task) bool {
-	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
+func (w *Worker) TryTask(t *task.Task) bool {
+	logging.Logf(logging.LogInfo, "Trying: %s", t.String())
 	tryMangle := false
 	w.redir = nil
-	if resp, err := w.client.Request(task.URL, task.Host, task.Header); err != nil && w.redir == nil {
+	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
 		// TODO: add host, headers, group, etc.
-		result := &results.Result{URL: task.URL, Host: task.Host, Error: err}
+		result := results.NewResult(t.URL, t.Host)
+		result.Error = err
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
@@ -183,31 +184,29 @@ func (w *Worker) TryTask(task *task.Task) bool {
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
-		if util.URLIsDir(task.URL) && w.KeepSpidering(resp.StatusCode) {
-			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
-			w.adder(task)
+		if util.URLIsDir(t.URL) && w.KeepSpidering(resp.StatusCode) {
+			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
+			w.adder(t)
 		}
 		if w.redir != nil {
 			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
-			t := task.Copy()
+			t := t.Copy()
 			t.URL = w.redir.URL
 			w.adder(t)
 		}
 		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
-			w.pageWorker.Handle(task, resp.Body)
+			w.pageWorker.Handle(t, resp.Body)
 		}
 		var redir *url.URL
 		if w.redir != nil {
 			redir = w.redir.URL
 		}
-		w.rchan <- &results.Result{
-			URL:         task.URL,
-			Host:        task.Host,
-			Code:        resp.StatusCode,
-			Redir:       redir,
-			Length:      resp.ContentLength,
-			ContentType: resp.Header.Get("Content-Type"),
-		}
+		res := results.NewResult(t.URL, t.Host)
+		res.Code = resp.StatusCode
+		res.Redir = redir
+		res.Length = resp.ContentLength
+		res.ContentType = resp.Header.Get("Content-Type")
+		w.rchan <- res
 		tryMangle = w.KeepSpidering(resp.StatusCode)
 	}
 	if w.settings.SleepTime != 0 {
