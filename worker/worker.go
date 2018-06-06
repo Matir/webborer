@@ -173,10 +173,9 @@ func (w *Worker) TryTask(task *task.Task) bool {
 	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
 	tryMangle := false
 	w.redir = nil
-	// TODO: handle Host & Headers!
 	if resp, err := w.client.Request(task.URL, task.Host, task.Header); err != nil && w.redir == nil {
 		// TODO: add host, headers, group, etc.
-		result := &results.Result{URL: task.URL, Error: err}
+		result := &results.Result{URL: task.URL, Host: task.Host, Error: err}
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
