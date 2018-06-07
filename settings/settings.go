@@ -135,6 +135,7 @@ func (settings *ScanSettings) InitFlags() {
 	}
 
 	flag.Var(&settings.BaseURLs, "url", "Starting `URL` & scopes.")
+	flag.Var(&StringSliceFileFlag{&settings.BaseURLs}, "url_file", "Starting `URL` & scopes, loaded from a file.")
 	runModeHelp := fmt.Sprintf("Run `mode`. Options: [%s]", strings.Join(runModeStrings[:], ", "))
 	flag.Var(&settings.RunMode, "mode", runModeHelp)
 	flag.IntVar(&settings.Threads, "threads", runtime.NumCPU(), "Number of worker `threads`.")
