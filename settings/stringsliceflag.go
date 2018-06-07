@@ -16,11 +16,13 @@
 package settings
 
 import (
+	"bufio"
+	"os"
 	"strings"
 )
 
-// StringSliceFlag is a flag.Value that takes a comma-separated string and turns
-// it into a slice of strings.
+// StringSliceFlag is a flag.Value that takes a comma-separated or repeated string
+// and turns it into a slice of strings.
 type StringSliceFlag []string
 
 // Satisfies flag.Value interface and splits value on commas
@@ -33,5 +35,34 @@ func (f *StringSliceFlag) String() string {
 
 func (f *StringSliceFlag) Set(value string) error {
 	*f = append(*f, strings.Split(value, ",")...)
+	return nil
+}
+
+// StringSliceFileFlag is flag.Value that loads from a file into a wrapped
+// StringSliceFlag
+type StringSliceFileFlag struct {
+	flag *StringSliceFlag
+}
+
+func (f *StringSliceFileFlag) String() string {
+	if f == nil || f.flag == nil {
+		return ""
+	}
+	return f.flag.String()
+}
+
+func (f *StringSliceFileFlag) Set(value string) error {
+	if fp, err := os.Open(value); err != nil {
+		return err
+	} else {
+		defer fp.Close()
+		sc := bufio.NewScanner(fp)
+		for sc.Scan() {
+			*(f.flag) = append(*(f.flag), sc.Text())
+		}
+		if err := sc.Err(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
