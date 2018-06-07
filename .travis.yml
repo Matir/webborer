@@ -7,7 +7,7 @@ install:
 
 script:
   - go test -v ./...
-  - bash ./test.sh
+  - bash -x ./test.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
