@@ -15,3 +15,5 @@ done
 if [ -t 1 ] ; then
   go tool cover -html=coverage.txt
 fi
+
+exit 0
