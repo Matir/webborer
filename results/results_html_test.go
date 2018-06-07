@@ -26,8 +26,8 @@ func TestHTMLResultsManager_Basic(t *testing.T) {
 	mgr := &HTMLResultsManager{
 		writer: &buf,
 	}
-	rchan := make(chan Result)
-	res := Result{
+	rchan := make(chan *Result)
+	res := &Result{
 		URL:         &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
 		Code:        200,
 		ContentType: "text/html",

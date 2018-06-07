@@ -12,16 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+// Package settings provides a central interface to webborer settings.
+package settings
 
 import (
-	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/workqueue"
+	"time"
 )
 
-// An Expander is responsible for taking input URLs and expanding them to the
-// various mutations to be processed.
-type Expander interface {
-	Expand(in <-chan *task.Task) <-chan *task.Task
-	SetAddCount(workqueue.QueueAddCount)
+// DurationFlag is a flag.Value that takes a Duration spec (see time.Duration)
+// and parses it and stores the Duration.
+type DurationFlag struct {
+	d *time.Duration
+}
+
+// Satisfies flag.Value interface and converts to a duration based on seconds
+func (f DurationFlag) String() string {
+	if f.d == nil {
+		return ""
+	}
+	return f.d.String()
+}
+
+func (f DurationFlag) Set(value string) error {
+	if d, err := time.ParseDuration(value); err != nil {
+		return err
+	} else {
+		*f.d = d
+	}
+	return nil
 }

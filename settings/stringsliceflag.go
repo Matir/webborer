@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright 2018 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,30 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package results
+// Package settings provides a central interface to webborer settings.
+package settings
 
 import (
-	"bytes"
 	"strings"
-	"testing"
 )
 
-// TODO: refactor this test to have a single test runner
-func TestPlainResultsManager_Basic(t *testing.T) {
-	buf := bytes.Buffer{}
-	mgr := &PlainResultsManager{
-		writer: &buf,
-		redirs: true,
+// StringSliceFlag is a flag.Value that takes a comma-separated string and turns
+// it into a slice of strings.
+type StringSliceFlag []string
+
+// Satisfies flag.Value interface and splits value on commas
+func (f *StringSliceFlag) String() string {
+	if f == nil {
+		return ""
 	}
-	rchan := make(chan *Result)
-	mgr.Run(rchan)
-	for _, r := range makeTestResults() {
-		rchan <- r
-	}
-	close(rchan)
-	mgr.Wait()
-	lines := strings.Split(buf.String(), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("Expected 3 lines of output, got %d", len(lines))
-	}
+	return strings.Join(*f, ",")
+}
+
+func (f *StringSliceFlag) Set(value string) error {
+	*f = append(*f, strings.Split(value, ",")...)
+	return nil
 }

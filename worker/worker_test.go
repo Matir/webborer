@@ -18,6 +18,7 @@ import (
 	"github.com/Matir/webborer/client/mock"
 	"github.com/Matir/webborer/results"
 	"github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"io"
 	"net/http"
 	"net/url"
@@ -25,20 +26,20 @@ import (
 	"testing"
 )
 
-func noopInt(_ int)         {}
-func noopUrl(_ ...*url.URL) {}
+func noopInt(_ int)           {}
+func noopUrl(_ ...*task.Task) {}
 
 func TestNewWorker(t *testing.T) {
 	ss := &settings.ScanSettings{}
-	src := make(chan *url.URL)
-	rchan := make(chan results.Result)
+	src := make(chan *task.Task)
+	rchan := make(chan *results.Result)
 	worker := NewWorker(ss, &mock.MockClientFactory{}, src, noopUrl, noopInt, rchan)
 	if worker == nil {
 		t.Fatal("Expected to receive a worker, got nil!")
 	}
 }
 
-func TryURLHelper(u *url.URL, resp *http.Response) *Worker {
+func TryTaskHelper(u *task.Task, resp *http.Response) *Worker {
 	client := &mock.MockClient{}
 	if resp != nil {
 		client.NextResponse = resp
@@ -46,7 +47,7 @@ func TryURLHelper(u *url.URL, resp *http.Response) *Worker {
 	ss := &settings.ScanSettings{
 		SpiderCodes: []int{200},
 	}
-	rchan := make(chan results.Result)
+	rchan := make(chan *results.Result)
 	w := &Worker{
 		client:   client,
 		settings: ss,
@@ -58,21 +59,21 @@ func TryURLHelper(u *url.URL, resp *http.Response) *Worker {
 		for range rchan {
 		}
 	}()
-	w.TryURL(u)
+	w.TryTask(u)
 	return w
 }
 
 func TestTryURL_Basic(t *testing.T) {
 	resp := mock.ResponseFromString("")
 	resp.StatusCode = 200
-	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	TryURLHelper(u, resp)
+	u := task.NewTaskFromURL(&url.URL{Scheme: "http", Host: "localhost", Path: "/"})
+	TryTaskHelper(u, resp)
 	// TODO: check which requests were made
 }
 
 func TestTryURL_Error(t *testing.T) {
-	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	TryURLHelper(u, nil)
+	u := task.NewTaskFromURL(&url.URL{Scheme: "http", Host: "localhost", Path: "/"})
+	TryTaskHelper(u, nil)
 	// TODO: check which requests were made
 }
 
@@ -86,7 +87,7 @@ func TestTryMangleURL_Basic(t *testing.T) {
 		SpiderCodes: []int{200},
 		Mangle:      true,
 	}
-	rchan := make(chan results.Result)
+	rchan := make(chan *results.Result)
 	defer close(rchan)
 	go func() {
 		for range rchan {
@@ -99,7 +100,7 @@ func TestTryMangleURL_Basic(t *testing.T) {
 		adder:    noopUrl,
 	}
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	w.TryMangleURL(u)
+	w.TryMangleTask(task.NewTaskFromURL(u))
 	// TODO: check which requests were made
 }
 
@@ -114,7 +115,7 @@ func TestTryHandleURL_Basic(t *testing.T) {
 		Mangle:      true,
 		Extensions:  []string{"html", "php"},
 	}
-	rchan := make(chan results.Result)
+	rchan := make(chan *results.Result)
 	defer close(rchan)
 	go func() {
 		for range rchan {
@@ -128,7 +129,7 @@ func TestTryHandleURL_Basic(t *testing.T) {
 		done:     noopInt,
 	}
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/index"}
-	w.HandleURL(u)
+	w.HandleTask(task.NewTaskFromURL(u))
 	// TODO: check which requests were made
 }
 
@@ -137,8 +138,8 @@ func TestStartWorkers_SingleIteration(t *testing.T) {
 		Workers:   2,
 		ParseHTML: true,
 	}
-	schan := make(chan *url.URL)
-	rchan := make(chan results.Result)
+	schan := make(chan *task.Task)
+	rchan := make(chan *results.Result)
 	u, _ := url.Parse("http://www.example.com")
 	for i, w := range StartWorkers(
 		ss,
@@ -148,7 +149,7 @@ func TestStartWorkers_SingleIteration(t *testing.T) {
 		noopInt,
 		rchan) {
 		// Send the input
-		schan <- u
+		schan <- task.NewTaskFromURL(u)
 		// Read the result
 		<-rchan
 		// Both methods of signalling closure
@@ -176,7 +177,7 @@ func (*FakePageWorker) Eligible(_ *http.Response) bool {
 	return true
 }
 
-func (*FakePageWorker) Handle(_ *url.URL, _ io.Reader) {}
+func (*FakePageWorker) Handle(_ *task.Task, _ io.Reader) {}
 
 func TestSetPageWorker(t *testing.T) {
 	w := &Worker{}

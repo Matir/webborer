@@ -22,6 +22,7 @@ import (
 	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/results"
 	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
 	"io"
@@ -37,7 +38,7 @@ type Stoppable interface {
 
 type PageWorker interface {
 	Eligible(*http.Response) bool
-	Handle(*url.URL, io.Reader)
+	Handle(*task.Task, io.Reader)
 }
 
 // Workers do the work of connecting to the server, issuing the request, and
@@ -47,13 +48,13 @@ type Worker struct {
 	// client for connections
 	client client.Client
 	// Channel for URLs to scan
-	src <-chan *url.URL
+	src <-chan *task.Task
 	// Function to add future work
 	adder workqueue.QueueAddFunc
 	// Function to mark work done
 	done workqueue.QueueDoneFunc
 	// Channel for scan results
-	rchan chan<- results.Result
+	rchan chan<- *results.Result
 	// Settings
 	settings *ss.ScanSettings
 	// HTML worker to parse page
@@ -69,10 +70,10 @@ type Worker struct {
 // Construct a worker with given settings.
 func NewWorker(settings *ss.ScanSettings,
 	factory client.ClientFactory,
-	src <-chan *url.URL,
+	src <-chan *task.Task,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	rchan chan<- results.Result) *Worker {
+	rchan chan<- *results.Result) *Worker {
 	w := &Worker{
 		client:   factory.Get(),
 		settings: settings,
@@ -108,11 +109,11 @@ func (w *Worker) Run() {
 		select {
 		case <-w.stop:
 			return
-		case task, ok := <-w.src:
+		case t, ok := <-w.src:
 			if !ok { // channel closed
 				return
 			}
-			w.HandleURL(task)
+			w.HandleTask(t)
 		}
 	}
 }
@@ -129,19 +130,19 @@ func (w *Worker) Wait() {
 	<-w.waitq
 }
 
-func (w *Worker) HandleURL(task *url.URL) {
-	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", task.String())
-	withMangle := w.TryURL(task)
-	if !util.URLIsDir(task) {
+func (w *Worker) HandleTask(t *task.Task) {
+	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", t.String())
+	withMangle := w.TryTask(t)
+	if !util.URLIsDir(t.URL) {
 		if withMangle {
-			w.TryMangleURL(task)
+			w.TryMangleTask(t)
 		}
-		if !util.URLHasExtension(task) {
+		if !util.URLHasExtension(t.URL) {
 			for _, ext := range w.settings.Extensions {
-				task := *task
-				task.Path += "." + ext
-				if w.TryURL(&task) {
-					w.TryMangleURL(&task)
+				t := t.Copy()
+				t.URL.Path += "." + ext
+				if w.TryTask(t) {
+					w.TryMangleTask(t)
 				}
 			}
 		}
@@ -150,30 +151,32 @@ func (w *Worker) HandleURL(task *url.URL) {
 	w.done(1)
 }
 
-func (w *Worker) TryMangleURL(task *url.URL) {
+func (w *Worker) TryMangleTask(t *task.Task) {
 	if !w.settings.Mangle {
 		return
 	}
-	clone := *task
-	spos := strings.LastIndex(clone.Path, "/")
+	clone := t.Copy()
+	spos := strings.LastIndex(clone.URL.Path, "/")
 	if spos == -1 {
 		return
 	}
-	dirname := clone.Path[:spos]
-	basename := clone.Path[spos+1:]
+	dirname := clone.URL.Path[:spos]
+	basename := clone.URL.Path[spos+1:]
 	for _, newname := range Mangle(basename) {
-		clone := clone
-		clone.Path = dirname + "/" + newname
-		w.TryURL(&clone)
+		clone := clone.Copy()
+		clone.URL.Path = dirname + "/" + newname
+		w.TryTask(clone)
 	}
 }
 
-func (w *Worker) TryURL(task *url.URL) bool {
-	logging.Logf(logging.LogInfo, "Trying: %s", task.String())
+func (w *Worker) TryTask(t *task.Task) bool {
+	logging.Logf(logging.LogInfo, "Trying: %s", t.String())
 	tryMangle := false
 	w.redir = nil
-	if resp, err := w.client.RequestURL(task); err != nil && w.redir == nil {
-		result := results.Result{URL: task, Error: err}
+	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
+		// TODO: add host, headers, group, etc.
+		result := results.NewResult(t.URL, t.Host)
+		result.Error = err
 		if resp != nil {
 			result.Code = resp.StatusCode
 		}
@@ -181,28 +184,29 @@ func (w *Worker) TryURL(task *url.URL) bool {
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
-		if util.URLIsDir(task) && w.KeepSpidering(resp.StatusCode) {
-			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", task.String())
-			w.adder(task)
+		if util.URLIsDir(t.URL) && w.KeepSpidering(resp.StatusCode) {
+			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
+			w.adder(t)
 		}
 		if w.redir != nil {
 			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
-			w.adder(w.redir.URL)
+			t := t.Copy()
+			t.URL = w.redir.URL
+			w.adder(t)
 		}
 		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
-			w.pageWorker.Handle(task, resp.Body)
+			w.pageWorker.Handle(t, resp.Body)
 		}
 		var redir *url.URL
 		if w.redir != nil {
 			redir = w.redir.URL
 		}
-		w.rchan <- results.Result{
-			URL:         task,
-			Code:        resp.StatusCode,
-			Redir:       redir,
-			Length:      resp.ContentLength,
-			ContentType: resp.Header.Get("Content-Type"),
-		}
+		res := results.NewResult(t.URL, t.Host)
+		res.Code = resp.StatusCode
+		res.Redir = redir
+		res.Length = resp.ContentLength
+		res.ContentType = resp.Header.Get("Content-Type")
+		w.rchan <- res
 		tryMangle = w.KeepSpidering(resp.StatusCode)
 	}
 	if w.settings.SleepTime != 0 {
@@ -213,6 +217,9 @@ func (w *Worker) TryURL(task *url.URL) bool {
 
 // Should we keep spidering from this code?
 func (w *Worker) KeepSpidering(code int) bool {
+	if w.settings.RunMode == ss.RunModeDotProduct {
+		return false
+	}
 	for _, v := range w.settings.SpiderCodes {
 		if code == v {
 			return true
@@ -224,16 +231,16 @@ func (w *Worker) KeepSpidering(code int) bool {
 // Starts a batch of workers based on the relevant settings.
 func StartWorkers(settings *ss.ScanSettings,
 	factory client.ClientFactory,
-	src <-chan *url.URL,
+	src <-chan *task.Task,
 	adder workqueue.QueueAddFunc,
 	done workqueue.QueueDoneFunc,
-	rchan chan<- results.Result) []*Worker {
+	rchan chan<- *results.Result) []*Worker {
 	count := settings.Workers
 	workers := make([]*Worker, count)
 	for i := 0; i < count; i++ {
 		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
-		if settings.ParseHTML {
+		if settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration {
 			workers[i].SetPageWorker(NewHTMLWorker(adder))
 		}
 	}

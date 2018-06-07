@@ -20,6 +20,7 @@ import (
 	"github.com/Matir/webborer/client"
 	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/robots"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"net/url"
 	"sync"
@@ -37,11 +38,11 @@ type WorkQueue struct {
 	// Number of items in queue, for stats
 	queueLen int
 	// Channel for URLs to be considered
-	src chan *url.URL
+	src chan *task.Task
 	// Channel for URLs to be worked on
-	dst chan *url.URL
+	dst chan *task.Task
 	// filter to determine if a URL should be processed
-	filter func(*url.URL) bool
+	filter func(*task.Task) bool
 	// channel to track done
 	started chan bool
 	// counter of work being done
@@ -52,17 +53,17 @@ type queueNode struct {
 	// next ptr
 	next *queueNode
 	// data
-	data *url.URL
+	data *task.Task
 }
 
-type QueueAddFunc func(...*url.URL)
+type QueueAddFunc func(...*task.Task)
 type QueueAddCount func(int)
 type QueueDoneFunc func(int)
 
 func NewWorkQueue(queueSize int, scope []*url.URL, allowUpgrades bool) *WorkQueue {
 	q := &WorkQueue{
-		src:     make(chan *url.URL, queueSize),
-		dst:     make(chan *url.URL, queueSize),
+		src:     make(chan *task.Task, queueSize),
+		dst:     make(chan *task.Task, queueSize),
 		filter:  makeScopeFunc(scope, allowUpgrades),
 		started: make(chan bool, 1),
 	}
@@ -70,9 +71,9 @@ func NewWorkQueue(queueSize int, scope []*url.URL, allowUpgrades bool) *WorkQueu
 	return q
 }
 
-func (q *WorkQueue) AddURLs(urls ...*url.URL) {
-	q.ctr.Add(int64(len(urls)))
-	for _, u := range urls {
+func (q *WorkQueue) AddTasks(tasks ...*task.Task) {
+	q.ctr.Add(int64(len(tasks)))
+	for _, u := range tasks {
 		q.src <- u
 	}
 }
@@ -81,7 +82,7 @@ func (q *WorkQueue) InputFinished() {
 	close(q.src)
 }
 
-func (q *WorkQueue) GetWorkChan() <-chan *url.URL {
+func (q *WorkQueue) GetWorkChan() <-chan *task.Task {
 	return q.dst
 }
 
@@ -149,8 +150,8 @@ func (q *WorkQueue) WaitPipe() {
 }
 
 func (q *WorkQueue) GetAddFunc() QueueAddFunc {
-	return func(urls ...*url.URL) {
-		q.AddURLs(urls...)
+	return func(tasks ...*task.Task) {
+		q.AddTasks(tasks...)
 	}
 }
 
@@ -176,19 +177,19 @@ func (q *WorkQueue) SeedFromRobots(scope []*url.URL, clientFactory client.Client
 				pathURL := *scopeURL
 				pathURL.Path = path
 				// Filter will handle if this is out of scope
-				q.AddURLs(scopeURL.ResolveReference(&pathURL))
+				q.AddTasks(task.NewTaskFromURL(scopeURL.ResolveReference(&pathURL)))
 			}
 		}
 	}
 }
 
-func (q *WorkQueue) reject(u *url.URL) {
+func (q *WorkQueue) reject(u *task.Task) {
 	logging.Logf(logging.LogDebug, "Workqueue rejecting %s", u.String())
 	q.ctr.Done(1)
 }
 
-// Append URL to end of queue
-func (q *WorkQueue) push(u *url.URL) {
+// Append Task to end of queue
+func (q *WorkQueue) push(u *task.Task) {
 	node := &queueNode{data: u}
 	if q.tail != nil {
 		q.tail.next = node
@@ -200,7 +201,7 @@ func (q *WorkQueue) push(u *url.URL) {
 }
 
 // Get URL from front of queue
-func (q *WorkQueue) pop() *url.URL {
+func (q *WorkQueue) pop() *task.Task {
 	node := q.head
 	if node == nil {
 		return nil
@@ -214,7 +215,7 @@ func (q *WorkQueue) pop() *url.URL {
 }
 
 // Get URL from front of queue without removal
-func (q *WorkQueue) peek() *url.URL {
+func (q *WorkQueue) peek() *task.Task {
 	if q.head != nil {
 		return q.head.data
 	}
@@ -227,7 +228,7 @@ func (q *WorkQueue) GetCounter() *WorkCounter {
 }
 
 // Build a function to check if the target URL is in scope.
-func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
+func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*task.Task) bool {
 	allowedScopes := make([]*url.URL, len(scope))
 	copy(allowedScopes, scope)
 	if allowUpgrades {
@@ -240,9 +241,9 @@ func makeScopeFunc(scope []*url.URL, allowUpgrades bool) func(*url.URL) bool {
 			}
 		}
 	}
-	return func(target *url.URL) bool {
+	return func(target *task.Task) bool {
 		for _, scopeURL := range allowedScopes {
-			if util.URLIsSubpath(scopeURL, target) {
+			if util.URLIsSubpath(scopeURL, target.URL) {
 				return true
 			}
 		}

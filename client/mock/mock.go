@@ -51,6 +51,10 @@ func (f *MockClientFactory) Get() client.Client {
 }
 
 func (c *MockClient) RequestURL(u *url.URL) (*http.Response, error) {
+	return c.Request(u, "", nil)
+}
+
+func (c *MockClient) Request(u *url.URL, host string, header http.Header) (*http.Response, error) {
 	c.Requests = append(c.Requests, u)
 	if c.Redir != nil && c.CheckRedirect != nil {
 		req := &http.Request{URL: c.Redir}

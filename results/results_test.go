@@ -20,18 +20,18 @@ import (
 	"testing"
 )
 
-func makeTestResults() []Result {
-	return []Result{
-		Result{
+func makeTestResults() []*Result {
+	return []*Result{
+		&Result{
 			URL:         &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
 			Code:        200,
 			ContentType: "text/html",
 		},
-		Result{
+		&Result{
 			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/x"},
 			Code: 404,
 		},
-		Result{
+		&Result{
 			URL:   &url.URL{Scheme: "http", Host: "localhost", Path: "/.git"},
 			Code:  301,
 			Redir: &url.URL{Scheme: "https", Host: "localhost", Path: "/.git"},
@@ -68,7 +68,7 @@ func TestFoundSomething(t *testing.T) {
 }
 
 func TestReportResult(t *testing.T) {
-	r := Result{Code: 200}
+	r := &Result{Code: 200}
 	if !ReportResult(r) {
 		t.Error("Expected to report a result of 200.")
 	}

@@ -57,13 +57,12 @@ func TestStringSliceFlag(t *testing.T) {
 	if f.String() != "" {
 		t.Error("Expected empty string for empty StringSliceFlag.")
 	}
-	f.slice = &[]string{}
 	s := "a,b,c"
 	if err := f.Set(s); err != nil {
 		t.Errorf("Error when setting StringSliceFlag: %v", err)
 	}
-	if len(*f.slice) != 3 {
-		t.Errorf("len(f.slice) != 3, = %d", len(*f.slice))
+	if len(f) != 3 {
+		t.Errorf("len(f) != 3, = %d", len(f))
 	}
 	if f.String() != s {
 		t.Errorf("Differing strings: \"%s\" vs \"%s\".", f.String(), s)
@@ -75,13 +74,12 @@ func TestIntSliceFlag(t *testing.T) {
 	if f.String() != "" {
 		t.Error("Expected empty string for empty IntSliceFlag.")
 	}
-	f.slice = &[]int{}
 	s := "1,2,3"
 	if err := f.Set(s); err != nil {
 		t.Errorf("Error when setting IntSliceFlag: %v", err)
 	}
-	if len(*f.slice) != 3 {
-		t.Errorf("len(f.slice) != 3, = %d", len(*f.slice))
+	if len(f) != 3 {
+		t.Errorf("len(f) != 3, = %d", len(f))
 	}
 	if f.String() != s {
 		t.Errorf("Differing strings: \"%s\" vs \"%s\".", f.String(), s)
@@ -123,39 +121,36 @@ func TestDurationFlag_Set_Invalid(t *testing.T) {
 }
 
 func TestRobotsFlag_Empty(t *testing.T) {
-	f := robotsFlag{}
+	f := RobotsModeOption(0)
 	if f.String() != "ignore" {
 		t.Errorf("Expected robots flag ignore, got %s.", f.String())
 	}
 }
 
 func TestRobotsFlag_String(t *testing.T) {
-	i := 0
-	f := robotsFlag{&i}
+	f := RobotsModeOption(0)
 	if f.String() != "ignore" {
 		t.Errorf("Expected robots flag ignore, got %s.", f.String())
 	}
 }
 
 func TestRobotsFlag_Set_Valid(t *testing.T) {
-	i := 0
-	f := robotsFlag{&i}
+	f := RobotsModeOption(0)
 	if err := f.Set("obey"); err != nil {
 		t.Errorf("Expected no error setting robots flag, got %v", err)
 	}
-	if i != ObeyRobots {
-		t.Errorf("Expected flag to be %d, got %d.", ObeyRobots, i)
+	if f != ObeyRobots {
+		t.Errorf("Expected flag to be %d, got %d.", ObeyRobots, f)
 	}
 }
 
 func TestRobotsFlag_Set_Invalid(t *testing.T) {
-	i := 0
-	f := robotsFlag{&i}
+	f := RobotsModeOption(0)
 	if err := f.Set("wtfmate"); err == nil {
 		t.Error("Expected error setting flag, got nil.")
 	}
-	if i != 0 {
-		t.Errorf("Expected flag unchanged during error, got %d.", i)
+	if f != 0 {
+		t.Errorf("Expected flag unchanged during error, got %d.", f)
 	}
 }
 

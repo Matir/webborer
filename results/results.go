@@ -29,6 +29,8 @@ import (
 type Result struct {
 	// URL of resource
 	URL *url.URL
+	// Host header (if different)
+	Host string
 	// HTTP Status Code
 	Code int
 	// Error if one occurred
@@ -39,15 +41,44 @@ type Result struct {
 	Length int64
 	// Content-type header
 	ContentType string
+	// Known Headers
+	Header http.Header
+	// Group used for potentially bucketing results
+	ResultGroup string
+}
+
+func NewResult(URL *url.URL, host string) *Result {
+	rv := &Result{
+		URL:  URL,
+		Host: host,
+	}
+	rv.ResultGroup = GetResultGroup(rv)
+	return rv
+}
+
+type ResultGroupGenerator func(*Result) string
+
+var GetResultGroup ResultGroupGenerator = func(*Result) string { return "" }
+
+func (r *Result) String() string {
+	var host string
+	if r.Host != "" {
+		host = fmt.Sprintf(" (%s)", r.Host)
+	}
+	return fmt.Sprintf(
+		"%s%s: %d",
+		r.URL.String(),
+		host,
+		r.Code)
 }
 
 // ResultsManager provides an interface for reading results from a channel and
 // writing them to some form of output.
 type ResultsManager interface {
 	// Run reads all of the Results in the given channel and writes them to an
-	// appropriate output sync.  Run should start its own goroutine for the bulk
+	// appropriate output sink.  Run should start its own goroutine for the bulk
 	// of the work.
-	Run(<-chan Result)
+	Run(<-chan *Result)
 	// Wait until the channel has been read and output done.
 	Wait()
 }
@@ -57,7 +88,7 @@ type baseResultsManager struct {
 }
 
 // Available output formats as strings.
-var OutputFormats = []string{"text", "csv", "html"}
+var OutputFormats = []string{"text", "csv", "html", "diff"}
 
 func init() {
 	ss.SetOutputFormats(OutputFormats)
@@ -74,14 +105,14 @@ func FoundSomething(code int) bool {
 }
 
 // Returns true if this result should be included in reports
-func ReportResult(res Result) bool {
+func ReportResult(res *Result) bool {
 	return res.Error == nil && FoundSomething(res.Code)
 }
 
 // Construct a ResultsManager for the given settings in the ss.ScanSettings.
 // Returns an object satisfying the ResultsManager interface or an error.
 func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
-	var writer io.Writer
+	var writer io.WriteCloser
 	var fp *os.File
 	var err error
 
@@ -95,15 +126,20 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 			writer = fp
 		}
 	}
+
 	switch {
 	case format == "text":
 		return &PlainResultsManager{writer: writer, fp: fp, redirs: settings.IncludeRedirects}, nil
 	case format == "csv":
 		return &CSVResultsManager{writer: csv.NewWriter(writer), fp: fp}, nil
 	case format == "html":
-		// TODO: do more than the first
+		// TODO: do more than the first BaseURL
 		return &HTMLResultsManager{writer: writer, fp: fp, BaseURL: settings.BaseURLs[0]}, nil
+	case format == "diff":
+		GetResultGroup = func(r *Result) string { return r.URL.Host }
+		return NewDiffResultsManager(writer), nil
 	}
+
 	return nil, fmt.Errorf("Invalid output type: %s", format)
 }
 
