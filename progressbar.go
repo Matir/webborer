@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/matir/webborer/workqueue"
+	"github.com/Matir/webborer/workqueue"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 

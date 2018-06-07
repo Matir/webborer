@@ -18,7 +18,7 @@ package results
 import (
 	"encoding/csv"
 	"fmt"
-	ss "github.com/matir/webborer/settings"
+	ss "github.com/Matir/webborer/settings"
 	"io"
 	"net/http"
 	"net/url"

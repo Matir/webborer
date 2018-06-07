@@ -16,16 +16,16 @@
 package main
 
 import (
-	"github.com/matir/webborer/client"
-	"github.com/matir/webborer/filter"
-	"github.com/matir/webborer/logging"
-	"github.com/matir/webborer/results"
-	ss "github.com/matir/webborer/settings"
-	"github.com/matir/webborer/task"
-	"github.com/matir/webborer/util"
-	"github.com/matir/webborer/wordlist"
-	"github.com/matir/webborer/worker"
-	"github.com/matir/webborer/workqueue"
+	"github.com/Matir/webborer/client"
+	"github.com/Matir/webborer/filter"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/results"
+	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/wordlist"
+	"github.com/Matir/webborer/worker"
+	"github.com/Matir/webborer/workqueue"
 	"runtime"
 )
 

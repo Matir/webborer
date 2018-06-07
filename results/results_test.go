@@ -15,7 +15,7 @@
 package results
 
 import (
-	"github.com/matir/webborer/settings"
+	"github.com/Matir/webborer/settings"
 	"net/url"
 	"testing"
 )
