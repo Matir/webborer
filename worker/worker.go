@@ -188,19 +188,15 @@ func (w *Worker) TryTask(t *task.Task) bool {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
 			w.adder(t)
 		}
+		var redir *url.URL
 		if w.redir != nil {
 			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
 			t := t.Copy()
 			t.URL = w.redir.URL
 			w.adder(t)
-		}
-		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
-			w.pageWorker.Handle(t, resp.Body)
-		}
-		var redir *url.URL
-		if w.redir != nil {
 			redir = w.redir.URL
 		}
+		w.runPageWorkers(t, resp)
 		res := results.NewResult(t.URL, t.Host)
 		res.Code = resp.StatusCode
 		res.Redir = redir
@@ -209,10 +205,20 @@ func (w *Worker) TryTask(t *task.Task) bool {
 		w.rchan <- res
 		tryMangle = w.KeepSpidering(resp.StatusCode)
 	}
+	w.Sleep()
+	return tryMangle
+}
+
+func (w *Worker) Sleep() {
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
-	return tryMangle
+}
+
+func (w *Worker) runPageWorkers(t *task.Task, resp *http.Response) {
+	if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
+		w.pageWorker.Handle(t, resp.Body)
+	}
 }
 
 // Should we keep spidering from this code?
