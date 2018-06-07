@@ -7,7 +7,7 @@ echo "mode: ${mode}" > coverage.txt
 for dir in $(go list ./... | grep -v '/vendor'); do
   go test -race -coverprofile=profile.out -covermode=${mode} $dir
   if [ -f profile.out ]; then
-    grep -v '^mode: ' profile.out >> coverage.txt
+    grep -v '^mode: ' profile.out >> coverage.txt || test $? = 1
     rm profile.out
   fi
 done
