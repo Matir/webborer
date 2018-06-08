@@ -27,7 +27,6 @@ import (
 	"github.com/Matir/webborer/workqueue"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -132,16 +131,16 @@ func (w *Worker) Wait() {
 
 func (w *Worker) HandleTask(t *task.Task) {
 	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", t.String())
-	withMangle := w.TryTask(t)
+	code := w.TryTask(t)
 	if !util.URLIsDir(t.URL) {
-		if withMangle {
+		if w.KeepSpidering(code) {
 			w.TryMangleTask(t)
 		}
 		if !util.URLHasExtension(t.URL) {
 			for _, ext := range w.settings.Extensions {
 				t := t.Copy()
 				t.URL.Path += "." + ext
-				if w.TryTask(t) {
+				if w.KeepSpidering(w.TryTask(t)) {
 					w.TryMangleTask(t)
 				}
 			}
@@ -169,18 +168,14 @@ func (w *Worker) TryMangleTask(t *task.Task) {
 	}
 }
 
-func (w *Worker) TryTask(t *task.Task) bool {
+func (w *Worker) TryTask(t *task.Task) int {
 	logging.Logf(logging.LogInfo, "Trying: %s", t.String())
-	tryMangle := false
 	w.redir = nil
+	defer w.Sleep()
 	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
-		// TODO: add host, headers, group, etc.
-		result := results.NewResult(t.URL, t.Host)
-		result.Error = err
-		if resp != nil {
-			result.Code = resp.StatusCode
-		}
+		result := w.ResultForError(t, resp, err)
 		w.rchan <- result
+		return 0
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
@@ -188,25 +183,40 @@ func (w *Worker) TryTask(t *task.Task) bool {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
 			w.adder(t)
 		}
-		var redir *url.URL
 		if w.redir != nil {
 			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
 			t := t.Copy()
 			t.URL = w.redir.URL
 			w.adder(t)
-			redir = w.redir.URL
 		}
 		w.runPageWorkers(t, resp)
-		res := results.NewResult(t.URL, t.Host)
-		res.Code = resp.StatusCode
-		res.Redir = redir
-		res.Length = resp.ContentLength
-		res.ContentType = resp.Header.Get("Content-Type")
-		w.rchan <- res
-		tryMangle = w.KeepSpidering(resp.StatusCode)
+		result := w.ResultForResponse(t, resp)
+		w.rchan <- result
+		return resp.StatusCode
 	}
-	w.Sleep()
-	return tryMangle
+}
+
+func (w *Worker) ResultForError(t *task.Task, resp *http.Response, err error) *results.Result {
+	var rv *results.Result
+	if resp != nil {
+		rv = w.ResultForResponse(t, resp)
+	} else {
+		rv = results.NewResultForTask(t)
+	}
+	rv.Error = err
+	return rv
+}
+
+func (w *Worker) ResultForResponse(t *task.Task, resp *http.Response) *results.Result {
+	rv := results.NewResultForTask(t)
+	rv.Code = resp.StatusCode
+	rv.Length = resp.ContentLength // Not always available :(
+	rv.ContentType = resp.Header.Get("Content-Type")
+	rv.ResponseHeader = resp.Header // TODO: filter?
+	if w.redir != nil {
+		rv.Redir = w.redir.URL
+	}
+	return rv
 }
 
 func (w *Worker) Sleep() {

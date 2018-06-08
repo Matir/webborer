@@ -61,16 +61,16 @@ func NewBaselineResult(results ...Result) (*BaselineResult, error) {
 		}
 	}
 
-	for k, _ := range res.Header {
+	for k, _ := range res.ResponseHeader {
 		k = strings.ToLower(k)
 		if util.StringSliceContains(neverImportant, k) {
 			continue
 		}
 		matches := true
-		baseline := results[0].Header[k][0]
+		baseline := results[0].ResponseHeader[k][0]
 		if len(results) > 0 {
 			for _, r := range results[1:] {
-				if r.Header[k][0] != baseline {
+				if r.ResponseHeader[k][0] != baseline {
 					matches = false
 					break
 				}
