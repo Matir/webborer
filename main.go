@@ -108,6 +108,8 @@ func main() {
 
 	headerExpander := filter.NewHeaderExpander(settings.OptionalHeader.Header())
 	headerExpander.SetAddCount(queue.GetAddCount())
+	extensionExpander := filter.NewExtensionExpander(settings.Extensions)
+	extensionExpander.SetAddCount(queue.GetAddCount())
 
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 
@@ -121,6 +123,7 @@ func main() {
 	workChan := queue.GetWorkChan()
 	workChan = expander.Expand(workChan)
 	workChan = headerExpander.Expand(workChan)
+	workChan = extensionExpander.Expand(workChan)
 	workChan = filter.RunFilter(workChan)
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")

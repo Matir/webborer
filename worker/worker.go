@@ -136,6 +136,7 @@ func (w *Worker) HandleTask(t *task.Task) {
 		if w.KeepSpidering(code) {
 			w.TryMangleTask(t)
 		}
+		// TODO: move this to an expander!
 		if !util.URLHasExtension(t.URL) {
 			for _, ext := range w.settings.Extensions {
 				t := t.Copy()
@@ -175,7 +176,10 @@ func (w *Worker) TryTask(t *task.Task) int {
 	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
 		result := w.ResultForError(t, resp, err)
 		w.rchan <- result
-		return 0
+		if resp == nil {
+			return 0
+		}
+		return resp.StatusCode
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
@@ -183,17 +187,22 @@ func (w *Worker) TryTask(t *task.Task) int {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
 			w.adder(t)
 		}
-		if w.redir != nil {
-			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
-			t := t.Copy()
-			t.URL = w.redir.URL
-			w.adder(t)
-		}
+		w.spiderRedirect(t)
 		w.runPageWorkers(t, resp)
 		result := w.ResultForResponse(t, resp)
 		w.rchan <- result
 		return resp.StatusCode
 	}
+}
+
+func (w *Worker) spiderRedirect(t *task.Task) {
+	if w.redir == nil {
+		return
+	}
+	logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
+	t = t.Copy()
+	t.URL = w.redir.URL
+	w.adder(t)
 }
 
 func (w *Worker) ResultForError(t *task.Task, resp *http.Response, err error) *results.Result {
@@ -265,6 +274,7 @@ func StartWorkers(settings *ss.ScanSettings,
 
 // Mangle a basename
 func Mangle(basename string) []string {
+	// TODO: do this by referring back tasks!
 	mangleRules := []string{
 		".%s.swp", // VIM Swap File
 		"%s~",     // Backup file
