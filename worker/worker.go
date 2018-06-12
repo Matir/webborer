@@ -136,16 +136,6 @@ func (w *Worker) HandleTask(t *task.Task) {
 		if w.KeepSpidering(code) {
 			w.TryMangleTask(t)
 		}
-		// TODO: move this to an expander!
-		if !util.URLHasExtension(t.URL) {
-			for _, ext := range w.settings.Extensions {
-				t := t.Copy()
-				t.URL.Path += "." + ext
-				if w.KeepSpidering(w.TryTask(t)) {
-					w.TryMangleTask(t)
-				}
-			}
-		}
 	}
 	// Mark as done
 	w.done(1)

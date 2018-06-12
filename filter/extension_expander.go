@@ -40,6 +40,7 @@ func (e *ExtensionExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
 	outChan := make(chan *task.Task)
 	go func() {
 		defer close(outChan)
+		numExtensions := len(e.extensions)
 		for it := range in {
 			// Un modified form
 			outChan <- it
@@ -49,6 +50,7 @@ func (e *ExtensionExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
 			if isDirectory(it.URL) {
 				continue
 			}
+			e.adder(numExtensions)
 			for _, ext := range e.extensions {
 				t := it.Copy()
 				t.URL.Path = fmt.Sprintf("%s.%s", it.URL.Path, ext)
