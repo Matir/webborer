@@ -67,6 +67,8 @@ type ScanSettings struct {
 	OutputPath string
 	// User-Agent for requests
 	UserAgent string
+	// HTTP Method to use
+	Method string
 	// Whether to include redirects in reporting
 	IncludeRedirects bool
 	// How to handle Robots.txt
@@ -101,6 +103,7 @@ func NewScanSettings() *ScanSettings {
 	settings := &ScanSettings{
 		Threads:        runtime.NumCPU(),
 		Extensions:     []string{"html", "php", "asp", "aspx"},
+		Method:         "GET",
 		Mangle:         true,
 		QueueSize:      1024,
 		Timeout:        30 * time.Second,
@@ -168,6 +171,7 @@ func (settings *ScanSettings) InitFlags() {
 	flag.StringVar(&settings.HTTPUsername, "http-username", "", "Username to be used for HTTP Auth")
 	flag.StringVar(&settings.HTTPPassword, "http-password", "", "Password to be used for HTTP Auth")
 	flag.BoolVar(&settings.ProgressBar, "progress", true, "Display a progress bar on stderr.")
+	flag.StringVar(&settings.Method, "method", "GET", "HTTP Method to use.")
 
 	// Debugging flags
 	flag.BoolVar(&settings.DebugCPUProf, "debug-cpuprof", false, "[DEBUG] CPU Profiling")

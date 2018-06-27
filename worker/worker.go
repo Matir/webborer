@@ -163,7 +163,8 @@ func (w *Worker) TryTask(t *task.Task) int {
 	logging.Logf(logging.LogInfo, "Trying: %s", t.String())
 	w.redir = nil
 	defer w.Sleep()
-	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
+	method := w.settings.Method
+	if resp, err := w.client.Request(t.URL, t.Host, method, t.Header); err != nil && w.redir == nil {
 		result := w.ResultForError(t, resp, err)
 		w.rchan <- result
 		if resp == nil {
