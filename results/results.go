@@ -166,7 +166,7 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 	}
 
 	if settings.RunMode == ss.RunModeLinkCheck {
-		rm := &LinkCheckResultsManager{writer: writer, fp: fp, format: format}
+		rm := &LinkCheckResultsManager{writer: writer, fp: fp, format: format, baseURL: settings.BaseURLs[0]}
 		if err := rm.init(); err != nil {
 			return nil, err
 		}

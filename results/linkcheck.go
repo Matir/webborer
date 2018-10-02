@@ -3,6 +3,7 @@ package results
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/Matir/webborer/logging"
 	"html/template"
 	"io"
 	"os"
@@ -18,6 +19,7 @@ type LinkCheckResultsManager struct {
 	resMap     map[string]*Result
 	missing    int
 	writerImpl linkCheckWriter
+	baseURL    string
 }
 
 func (rm *LinkCheckResultsManager) init() error {
@@ -46,6 +48,7 @@ func (rm *LinkCheckResultsManager) Run(resChan <-chan *Result) {
 			}
 			rm.done()
 		}()
+
 		var keys []string
 		for res := range resChan {
 			key := res.URL.String()
@@ -53,8 +56,9 @@ func (rm *LinkCheckResultsManager) Run(resChan <-chan *Result) {
 			keys = append(keys, key)
 		}
 		sort.Strings(keys)
-		rm.writerImpl.writeHeader()
+		rm.writerImpl.writeHeader(rm.baseURL)
 		count := 0
+
 		for _, resKey := range keys {
 			groupWritten := false
 			res := rm.resMap[resKey]
@@ -69,6 +73,7 @@ func (rm *LinkCheckResultsManager) Run(resChan <-chan *Result) {
 				}
 			}
 		}
+
 		rm.writerImpl.writeFooter(count)
 	}()
 }
@@ -88,9 +93,9 @@ func (rm *LinkCheckResultsManager) linkIsBroken(url string) bool {
 }
 
 type linkCheckWriter interface {
-	writeHeader()
-	writeFooter(count int)
-	writeGroup(src string)
+	writeHeader(string)
+	writeFooter(int)
+	writeGroup(string)
 	writeBrokenLink(src, dst, ltype string)
 	flush()
 }
@@ -104,7 +109,7 @@ func newLinkCheckCSVWriter(writer io.Writer) *linkCheckCSVWriter {
 	return &linkCheckCSVWriter{csv.NewWriter(writer)}
 }
 
-func (w *linkCheckCSVWriter) writeHeader() {
+func (w *linkCheckCSVWriter) writeHeader(_ string) {
 	w.csvWriter.Write([]string{"Source URL", "Destination URL", "Type"})
 }
 
@@ -133,16 +138,70 @@ func newLinkCheckHTMLWriter(writer io.Writer) *linkCheckHTMLWriter {
 	return &linkCheckHTMLWriter{writer}
 }
 
-func (w *linkCheckHTMLWriter) writeHeader() {
+func (w *linkCheckHTMLWriter) writeHeader(baseURL string) {
+	header := `{{define "HEAD"}}<html><head><title>webborer: linkCheck for {{.BaseURL}}</title></head><body><h1>webborer: linkCheck for {{.BaseURL}}</h1><table>{{end}}`
+	t, err := template.New("linkCheckHTMLWriter").Parse(header)
+	if err != nil {
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
+	}
+	data := struct {
+		BaseURL string
+	}{
+		baseURL,
+	}
+	if err := t.ExecuteTemplate(w.writer, "HEAD", data); err != nil {
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
+	}
 }
 
 func (w *linkCheckHTMLWriter) writeFooter(count int) {
+	footer := `{{define "FOOTER"}}</table><p>Total Broken Links Found: <b>{{.Count}}</b></html>{{end}}`
+	t, err := template.New("linkCheckHTMLWriter").Parse(footer)
+	if err != nil {
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
+	}
+	data := struct {
+		Count int
+	}{
+		count,
+	}
+	if err := t.ExecuteTemplate(w.writer, "FOOTER", data); err != nil {
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
+	}
 }
 
 func (w *linkCheckHTMLWriter) writeGroup(src string) {
+	group := `{{define "GROUP"}}<tr class='source'><td colspan='2'><a href='{{.Link}}'>{{.Link}}</a></td></tr>{{end}}`
+	t, err := template.New("linkCheckHTMLWriter").Parse(group)
+	if err != nil {
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
+	}
+	data := struct {
+		Link string
+	}{
+		src,
+	}
+	if err := t.ExecuteTemplate(w.writer, "GROUP", data); err != nil {
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
+	}
 }
 
 func (w *linkCheckHTMLWriter) writeBrokenLink(src, dst, ltype string) {
+	link := `{{define "LINK"}}<tr class='broken'><td><a href='{{.Dest}}'>{{.Dest}}</a></td><td>{{.LType}}</td></tr>{{end}}`
+	t, err := template.New("linkCheckHTMLWriter").Parse(link)
+	if err != nil {
+		logging.Logf(logging.LogWarning, "Error parsing a template: %s", err.Error())
+	}
+	data := struct {
+		Dest  string
+		LType string
+	}{
+		dst,
+		ltype,
+	}
+	if err := t.ExecuteTemplate(w.writer, "LINK", data); err != nil {
+		logging.Logf(logging.LogWarning, "Error writing template output: %s", err.Error())
+	}
 }
 
 func (w *linkCheckHTMLWriter) flush() {
