@@ -26,6 +26,23 @@ import (
 	"os"
 )
 
+// Types of links
+type LinkType int
+
+const (
+	LinkHREF = LinkType(iota)
+	LinkIMG
+	LinkScript
+	LinkStyle
+)
+
+var LinkTypes = []string{
+	"href",
+	"img",
+	"script",
+	"style",
+}
+
 // This is the result emitted by the worker for each URL tested.
 type Result struct {
 	// URL of resource
@@ -48,8 +65,11 @@ type Result struct {
 	ResponseHeader http.Header
 	// Group used for potentially bucketing results
 	ResultGroup string
+	// Links contained in result
+	Links map[string]LinkType
 }
 
+// Create a new result.
 func NewResult(URL *url.URL, host string) *Result {
 	rv := &Result{
 		URL:  URL,
@@ -69,6 +89,7 @@ type ResultGroupGenerator func(*Result) string
 
 var GetResultGroup ResultGroupGenerator = func(*Result) string { return "" }
 
+// Convert a result to a minimal string
 func (r *Result) String() string {
 	var host string
 	if r.Host != "" {
@@ -79,6 +100,14 @@ func (r *Result) String() string {
 		r.URL.String(),
 		host,
 		r.Code)
+}
+
+// Add a link to these results.
+func (r *Result) AddLink(URL *url.URL, ltype LinkType) {
+	if r.Links == nil {
+		r.Links = make(map[string]LinkType)
+	}
+	r.Links[URL.String()] = ltype
 }
 
 // ResultsManager provides an interface for reading results from a channel and
@@ -134,6 +163,14 @@ func GetResultsManager(settings *ss.ScanSettings) (ResultsManager, error) {
 		} else {
 			writer = fp
 		}
+	}
+
+	if settings.RunMode == ss.RunModeLinkCheck {
+		rm := &LinkCheckResultsManager{writer: writer, fp: fp, format: format}
+		if err := rm.init(); err != nil {
+			return nil, err
+		}
+		return rm, nil
 	}
 
 	switch {
