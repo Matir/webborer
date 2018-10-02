@@ -27,7 +27,6 @@ import (
 	"github.com/Matir/webborer/workqueue"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -132,19 +131,10 @@ func (w *Worker) Wait() {
 
 func (w *Worker) HandleTask(t *task.Task) {
 	logging.Logf(logging.LogDebug, "Trying Raw URL (unmangled): %s", t.String())
-	withMangle := w.TryTask(t)
+	code := w.TryTask(t)
 	if !util.URLIsDir(t.URL) {
-		if withMangle {
+		if w.KeepSpidering(code) {
 			w.TryMangleTask(t)
-		}
-		if !util.URLHasExtension(t.URL) {
-			for _, ext := range w.settings.Extensions {
-				t := t.Copy()
-				t.URL.Path += "." + ext
-				if w.TryTask(t) {
-					w.TryMangleTask(t)
-				}
-			}
 		}
 	}
 	// Mark as done
@@ -169,18 +159,18 @@ func (w *Worker) TryMangleTask(t *task.Task) {
 	}
 }
 
-func (w *Worker) TryTask(t *task.Task) bool {
+func (w *Worker) TryTask(t *task.Task) int {
 	logging.Logf(logging.LogInfo, "Trying: %s", t.String())
-	tryMangle := false
 	w.redir = nil
-	if resp, err := w.client.Request(t.URL, t.Host, t.Header); err != nil && w.redir == nil {
-		// TODO: add host, headers, group, etc.
-		result := results.NewResult(t.URL, t.Host)
-		result.Error = err
-		if resp != nil {
-			result.Code = resp.StatusCode
-		}
+	defer w.Sleep()
+	method := w.settings.Method
+	if resp, err := w.client.Request(t.URL, t.Host, method, t.Header); err != nil && w.redir == nil {
+		result := w.ResultForError(t, resp, err)
 		w.rchan <- result
+		if resp == nil {
+			return 0
+		}
+		return resp.StatusCode
 	} else {
 		defer resp.Body.Close()
 		// Do we keep going?
@@ -188,31 +178,57 @@ func (w *Worker) TryTask(t *task.Task) bool {
 			logging.Logf(logging.LogDebug, "Referring %s back for spidering.", t.String())
 			w.adder(t)
 		}
-		if w.redir != nil {
-			logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
-			t := t.Copy()
-			t.URL = w.redir.URL
-			w.adder(t)
-		}
-		if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
-			w.pageWorker.Handle(t, resp.Body)
-		}
-		var redir *url.URL
-		if w.redir != nil {
-			redir = w.redir.URL
-		}
-		res := results.NewResult(t.URL, t.Host)
-		res.Code = resp.StatusCode
-		res.Redir = redir
-		res.Length = resp.ContentLength
-		res.ContentType = resp.Header.Get("Content-Type")
-		w.rchan <- res
-		tryMangle = w.KeepSpidering(resp.StatusCode)
+		w.spiderRedirect(t)
+		w.runPageWorkers(t, resp)
+		result := w.ResultForResponse(t, resp)
+		w.rchan <- result
+		return resp.StatusCode
 	}
+}
+
+func (w *Worker) spiderRedirect(t *task.Task) {
+	if w.redir == nil {
+		return
+	}
+	logging.Logf(logging.LogDebug, "Referring redirect %s back.", w.redir.URL.String())
+	t = t.Copy()
+	t.URL = w.redir.URL
+	w.adder(t)
+}
+
+func (w *Worker) ResultForError(t *task.Task, resp *http.Response, err error) *results.Result {
+	var rv *results.Result
+	if resp != nil {
+		rv = w.ResultForResponse(t, resp)
+	} else {
+		rv = results.NewResultForTask(t)
+	}
+	rv.Error = err
+	return rv
+}
+
+func (w *Worker) ResultForResponse(t *task.Task, resp *http.Response) *results.Result {
+	rv := results.NewResultForTask(t)
+	rv.Code = resp.StatusCode
+	rv.Length = resp.ContentLength // Not always available :(
+	rv.ContentType = resp.Header.Get("Content-Type")
+	rv.ResponseHeader = resp.Header // TODO: filter?
+	if w.redir != nil {
+		rv.Redir = w.redir.URL
+	}
+	return rv
+}
+
+func (w *Worker) Sleep() {
 	if w.settings.SleepTime != 0 {
 		time.Sleep(w.settings.SleepTime)
 	}
-	return tryMangle
+}
+
+func (w *Worker) runPageWorkers(t *task.Task, resp *http.Response) {
+	if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
+		w.pageWorker.Handle(t, resp.Body)
+	}
 }
 
 // Should we keep spidering from this code?
@@ -249,6 +265,7 @@ func StartWorkers(settings *ss.ScanSettings,
 
 // Mangle a basename
 func Mangle(basename string) []string {
+	// TODO: do this by referring back tasks!
 	mangleRules := []string{
 		".%s.swp", // VIM Swap File
 		"%s~",     // Backup file

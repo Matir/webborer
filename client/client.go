@@ -28,7 +28,7 @@ import (
 // support our use case.
 type Client interface {
 	RequestURL(*url.URL) (*http.Response, error)
-	Request(*url.URL, string, http.Header) (*http.Response, error)
+	Request(*url.URL, string, string, http.Header) (*http.Response, error)
 	SetCheckRedirect(func(*http.Request, []*http.Request) error)
 }
 
@@ -53,15 +53,13 @@ type httpClient struct {
 // Handles HTTP Authentication & Custom Headers
 func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
 	logging.Infof("Deprectated function RequestURL is called.")
-	return c.Request(u, "", nil)
+	return c.Request(u, "", "GET", nil)
 }
 
 // Request the URL given with optional overrides.
 //
 // Handles HTTP Authentication & Custom Headers
-func (c *httpClient) Request(u *url.URL, host string, header http.Header) (*http.Response, error) {
-	// TODO: support other methods
-	method := "GET"
+func (c *httpClient) Request(u *url.URL, host, method string, header http.Header) (*http.Response, error) {
 	req := c.makeRequest(u, method, host, header)
 	resp, err := c.Client.Do(req)
 	if err != nil {

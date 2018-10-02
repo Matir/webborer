@@ -19,6 +19,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"io"
 	"net/http"
 	"net/url"
@@ -42,7 +43,9 @@ type Result struct {
 	// Content-type header
 	ContentType string
 	// Known Headers
-	Header http.Header
+	RequestHeader http.Header
+	// Response headers
+	ResponseHeader http.Header
 	// Group used for potentially bucketing results
 	ResultGroup string
 }
@@ -53,6 +56,12 @@ func NewResult(URL *url.URL, host string) *Result {
 		Host: host,
 	}
 	rv.ResultGroup = GetResultGroup(rv)
+	return rv
+}
+
+func NewResultForTask(t *task.Task) *Result {
+	rv := NewResult(t.URL, t.Host)
+	rv.RequestHeader = t.Header
 	return rv
 }
 
