@@ -16,6 +16,7 @@ package worker
 
 import (
 	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/results"
 	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
@@ -40,7 +41,7 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 }
 
 // Work on this response
-func (w *HTMLWorker) Handle(t *task.Task, body io.Reader) {
+func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result) {
 	limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
 	links := w.GetLinks(limitedBody)
 	foundURLs := make([]*url.URL, 0, len(links))
@@ -62,6 +63,7 @@ func (w *HTMLWorker) Handle(t *task.Task, body io.Reader) {
 		t := t.Copy()
 		t.URL = u
 		newTasks = append(newTasks, t)
+		result.AddLink(u, results.LinkUnknown)
 	}
 	w.adder(newTasks...)
 }

@@ -34,6 +34,7 @@ const (
 	LinkIMG
 	LinkScript
 	LinkStyle
+	LinkUnknown
 )
 
 var LinkTypes = []string{
@@ -41,6 +42,7 @@ var LinkTypes = []string{
 	"img",
 	"script",
 	"style",
+	"",
 }
 
 // This is the result emitted by the worker for each URL tested.
