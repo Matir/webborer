@@ -18,13 +18,13 @@
 package filter
 
 import (
-	"github.com/matir/webborer/client"
-	"github.com/matir/webborer/logging"
-	"github.com/matir/webborer/robots"
-	ss "github.com/matir/webborer/settings"
-	"github.com/matir/webborer/task"
-	"github.com/matir/webborer/util"
-	"github.com/matir/webborer/workqueue"
+	"github.com/Matir/webborer/client"
+	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/robots"
+	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
+	"github.com/Matir/webborer/util"
+	"github.com/Matir/webborer/workqueue"
 	"net/url"
 )
 

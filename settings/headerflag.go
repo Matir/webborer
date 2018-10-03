@@ -17,7 +17,7 @@ package settings
 
 import (
 	"fmt"
-	"github.com/matir/webborer/util"
+	"github.com/Matir/webborer/util"
 	"net/http"
 	"strings"
 )

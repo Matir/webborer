@@ -15,8 +15,8 @@
 package worker
 
 import (
-	"github.com/matir/webborer/results"
-	"github.com/matir/webborer/task"
+	"github.com/Matir/webborer/results"
+	"github.com/Matir/webborer/task"
 	"net/url"
 	"strings"
 	"testing"

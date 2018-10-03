@@ -19,7 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/matir/webborer/logging"
+	"github.com/Matir/webborer/logging"
 	"net/url"
 	"os"
 	"runtime"
