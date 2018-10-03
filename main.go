@@ -101,10 +101,15 @@ func main() {
 	case ss.RunModeDotProduct:
 		dpexpander := filter.NewDotProductExpander(words)
 		expander = dpexpander
+	case ss.RunModeLinkCheck:
+		// No expander needed
 	default:
 		panic("Unknown run mode!")
 	}
-	expander.SetAddCount(queue.GetAddCount())
+
+	if expander != nil {
+		expander.SetAddCount(queue.GetAddCount())
+	}
 
 	headerExpander := filter.NewHeaderExpander(settings.OptionalHeader.Header())
 	headerExpander.SetAddCount(queue.GetAddCount())
@@ -121,9 +126,11 @@ func main() {
 	// filter paths after expansion
 	logging.Debugf("Starting expansion and filtering...")
 	workChan := queue.GetWorkChan()
-	workChan = expander.Expand(workChan)
-	workChan = headerExpander.Expand(workChan)
-	workChan = extensionExpander.Expand(workChan)
+	if expander != nil {
+		workChan = expander.Expand(workChan)
+		workChan = headerExpander.Expand(workChan)
+		workChan = extensionExpander.Expand(workChan)
+	}
 	workChan = filter.RunFilter(workChan)
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")

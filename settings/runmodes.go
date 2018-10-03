@@ -27,11 +27,13 @@ type RunModeOption int
 const (
 	RunModeEnumeration = iota
 	RunModeDotProduct
+	RunModeLinkCheck
 )
 
 var runModeStrings = [...]string{
 	"enumeration",
 	"dotproduct",
+	"linkcheck",
 }
 
 func (f *RunModeOption) String() string {

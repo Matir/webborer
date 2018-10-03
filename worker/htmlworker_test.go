@@ -15,7 +15,9 @@
 package worker
 
 import (
+	"github.com/Matir/webborer/results"
 	"github.com/Matir/webborer/task"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -51,9 +53,9 @@ var smallHTMLDoc = `
 
 func TestHandle(t *testing.T) {
 	// Setup environment
-	results := make([]*task.Task, 0)
+	resultlist := make([]*task.Task, 0)
 	adder := func(f ...*task.Task) {
-		results = append(results, f...)
+		resultlist = append(resultlist, f...)
 	}
 	htmlWorker := NewHTMLWorker(adder)
 	base, err := url.Parse("http://www.example.com/subdir/")
@@ -63,7 +65,7 @@ func TestHandle(t *testing.T) {
 
 	// Run the worker
 	madeTask := task.NewTaskFromURL(base)
-	htmlWorker.Handle(madeTask, strings.NewReader(smallHTMLDoc))
+	htmlWorker.Handle(madeTask, strings.NewReader(smallHTMLDoc), results.NewResultForTask(madeTask))
 
 	// Make slice of expected URL
 	expected := make([]*url.URL, 0)
@@ -85,11 +87,26 @@ func TestHandle(t *testing.T) {
 	}
 
 	// Tests
-	uResults := make([]*url.URL, 0, len(results))
-	for _, v := range results {
+	uResults := make([]*url.URL, 0, len(resultlist))
+	for _, v := range resultlist {
 		uResults = append(uResults, v.URL)
 	}
 	if !compareURLSlice(expected, uResults) {
-		t.Fatalf("Results do not match.  Expected: %v, got %v.", expected, results)
+		t.Fatalf("Results do not match.  Expected: %v, got %v.", expected, resultlist)
+	}
+}
+
+func TestEligible(t *testing.T) {
+	htmlWorker := NewHTMLWorker(nil)
+	restest := &http.Response{
+		Header: make(http.Header),
+	}
+	if htmlWorker.Eligible(restest) {
+		t.Error("Not eligible with no content-type.")
+	}
+	restest.Header.Set("Content-type", "text/html")
+	restest.ContentLength = 1
+	if !htmlWorker.Eligible(restest) {
+		t.Error("Expected results to be eligible.")
 	}
 }

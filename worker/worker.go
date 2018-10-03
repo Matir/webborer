@@ -37,7 +37,7 @@ type Stoppable interface {
 
 type PageWorker interface {
 	Eligible(*http.Response) bool
-	Handle(*task.Task, io.Reader)
+	Handle(*task.Task, io.Reader, *results.Result)
 }
 
 // Workers do the work of connecting to the server, issuing the request, and
@@ -179,8 +179,8 @@ func (w *Worker) TryTask(t *task.Task) int {
 			w.adder(t)
 		}
 		w.spiderRedirect(t)
-		w.runPageWorkers(t, resp)
 		result := w.ResultForResponse(t, resp)
+		w.runPageWorkers(t, resp, result)
 		w.rchan <- result
 		return resp.StatusCode
 	}
@@ -225,9 +225,10 @@ func (w *Worker) Sleep() {
 	}
 }
 
-func (w *Worker) runPageWorkers(t *task.Task, resp *http.Response) {
+func (w *Worker) runPageWorkers(t *task.Task, resp *http.Response, result *results.Result) {
 	if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
-		w.pageWorker.Handle(t, resp.Body)
+		logging.Logf(logging.LogDebug, "Running page workers for task %s", t.String())
+		w.pageWorker.Handle(t, resp.Body, result)
 	}
 }
 
@@ -256,7 +257,7 @@ func StartWorkers(settings *ss.ScanSettings,
 	for i := 0; i < count; i++ {
 		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
-		if settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration {
+		if (settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration) || settings.RunMode == ss.RunModeLinkCheck {
 			workers[i].SetPageWorker(NewHTMLWorker(adder))
 		}
 	}
