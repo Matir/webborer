@@ -17,6 +17,7 @@ package results
 import (
 	"bytes"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -44,6 +45,16 @@ func TestInitLinkCheck(t *testing.T) {
 	if _, ok := lcrm.writerImpl.(*linkCheckCSVWriter); !ok {
 		t.Error("Expected a CSV writer.")
 	}
+	lcrm.format = "text"
+	if err := lcrm.init(); err != nil {
+		t.Error("Did not expect an error.")
+	}
+	if _, ok := lcrm.writerImpl.(*linkCheckCSVWriter); !ok {
+		t.Error("Expected a CSV writer.")
+	}
+	if lcrm.format != "csv" {
+		t.Error("Expected text format to become csv.")
+	}
 }
 
 func TestCodeIsBroken(t *testing.T) {
@@ -52,5 +63,36 @@ func TestCodeIsBroken(t *testing.T) {
 	}
 	if !codeIsBroken(http.StatusNotFound) {
 		t.Error("StatusNotFound should be broken.")
+	}
+}
+
+func exerciseLinkCheckWriter(w linkCheckWriter) {
+	w.writeHeader("http://localhost/")
+	w.writeGroup("src")
+	w.writeBrokenLink("src", "borked", "")
+	w.writeFooter(55)
+	w.flush()
+}
+
+func TestCSVWriter(t *testing.T) {
+	buf := &bytes.Buffer{}
+	w := newLinkCheckCSVWriter(buf)
+	exerciseLinkCheckWriter(w)
+	out := buf.String()
+	if !strings.Contains(out, "src,borked,") {
+		t.Error("Expected src,borked,")
+	}
+}
+
+func TestHTMLWriter(t *testing.T) {
+	buf := &bytes.Buffer{}
+	w := newLinkCheckHTMLWriter(buf)
+	exerciseLinkCheckWriter(w)
+	out := buf.String()
+	if !strings.Contains(out, "<a href='src'>src</a>") {
+		t.Error("Expected link to src!")
+	}
+	if !strings.Contains(out, "<a href='borked'>borked</a>") {
+		t.Error("Expected link to borked!")
 	}
 }

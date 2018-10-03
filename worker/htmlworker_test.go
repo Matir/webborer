@@ -17,6 +17,7 @@ package worker
 import (
 	"github.com/Matir/webborer/results"
 	"github.com/Matir/webborer/task"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -92,5 +93,20 @@ func TestHandle(t *testing.T) {
 	}
 	if !compareURLSlice(expected, uResults) {
 		t.Fatalf("Results do not match.  Expected: %v, got %v.", expected, resultlist)
+	}
+}
+
+func TestEligible(t *testing.T) {
+	htmlWorker := NewHTMLWorker(nil)
+	restest := &http.Response{
+		Header: make(http.Header),
+	}
+	if htmlWorker.Eligible(restest) {
+		t.Error("Not eligible with no content-type.")
+	}
+	restest.Header.Set("Content-type", "text/html")
+	restest.ContentLength = 1
+	if !htmlWorker.Eligible(restest) {
+		t.Error("Expected results to be eligible.")
 	}
 }
