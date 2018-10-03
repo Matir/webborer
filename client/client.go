@@ -18,7 +18,7 @@ package client
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"net/http"
 	"net/url"
 	"strings"

@@ -16,8 +16,8 @@ package filter
 
 import (
 	"fmt"
-	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/workqueue"
+	"github.com/matir/webborer/task"
+	"github.com/matir/webborer/workqueue"
 	"net/url"
 	"strings"
 )

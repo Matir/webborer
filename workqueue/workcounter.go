@@ -15,7 +15,7 @@
 package workqueue
 
 import (
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"sync"
 )
 

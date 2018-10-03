@@ -16,7 +16,7 @@ package workqueue
 
 import (
 	"fmt"
-	"github.com/Matir/webborer/task"
+	"github.com/matir/webborer/task"
 	"net/url"
 	"strconv"
 	"testing"

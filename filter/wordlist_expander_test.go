@@ -15,7 +15,7 @@
 package filter
 
 import (
-	"github.com/Matir/webborer/task"
+	"github.com/matir/webborer/task"
 	"net/url"
 	"testing"
 )

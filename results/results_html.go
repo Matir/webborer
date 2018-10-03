@@ -15,7 +15,7 @@
 package results
 
 import (
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"html/template"
 	"io"
 	"os"

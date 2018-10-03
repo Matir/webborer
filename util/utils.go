@@ -17,7 +17,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"net/http"
 	"net/url"
 	"os"

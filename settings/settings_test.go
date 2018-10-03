@@ -15,7 +15,7 @@
 package settings
 
 import (
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"testing"
 	"time"
 )

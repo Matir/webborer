@@ -3,7 +3,7 @@ package results
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/Matir/webborer/logging"
+	"github.com/matir/webborer/logging"
 	"html/template"
 	"io"
 	"os"

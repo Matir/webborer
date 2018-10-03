@@ -1,8 +1,8 @@
 package filter
 
 import (
-	"github.com/Matir/webborer/task"
-	"github.com/Matir/webborer/workqueue"
+	"github.com/matir/webborer/task"
+	"github.com/matir/webborer/workqueue"
 )
 
 type DotProductExpander struct {
