@@ -227,6 +227,7 @@ func (w *Worker) Sleep() {
 
 func (w *Worker) runPageWorkers(t *task.Task, resp *http.Response, result *results.Result) {
 	if w.pageWorker != nil && w.pageWorker.Eligible(resp) {
+		logging.Logf(logging.LogDebug, "Running page workers for task %s", t.String())
 		w.pageWorker.Handle(t, resp.Body, result)
 	}
 }
@@ -256,7 +257,7 @@ func StartWorkers(settings *ss.ScanSettings,
 	for i := 0; i < count; i++ {
 		workers[i] = NewWorker(settings, factory, src, adder, done, rchan)
 		workers[i].RunInBackground()
-		if settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration {
+		if (settings.ParseHTML && settings.RunMode == ss.RunModeEnumeration) || settings.RunMode == ss.RunModeLinkCheck {
 			workers[i].SetPageWorker(NewHTMLWorker(adder))
 		}
 	}

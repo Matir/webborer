@@ -44,6 +44,7 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result) {
 	limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
 	links := w.GetLinks(limitedBody)
+	logging.Logf(logging.LogInfo, "Found %d links for %s", len(links), t.URL.String())
 	foundURLs := make([]*url.URL, 0, len(links))
 	for _, l := range links {
 		u, err := url.Parse(l)
@@ -53,6 +54,7 @@ func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result
 		}
 		// TODO: use <base> tag
 		resolved := t.URL.ResolveReference(u)
+		result.AddLink(resolved, results.LinkUnknown)
 		foundURLs = append(foundURLs, resolved)
 		// Include parents of the found URL.
 		// Worker will remove duplicates
@@ -63,7 +65,6 @@ func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result
 		t := t.Copy()
 		t.URL = u
 		newTasks = append(newTasks, t)
-		result.AddLink(u, results.LinkUnknown)
 	}
 	w.adder(newTasks...)
 }
@@ -71,6 +72,7 @@ func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result
 // Check if this response can be handled by this worker
 func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-type")
+	logging.Logf(logging.LogInfo, "Content type: %s", ct)
 	if strings.ToLower(ct) != "text/html" {
 		return false
 	}
