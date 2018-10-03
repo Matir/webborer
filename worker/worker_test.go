@@ -177,7 +177,7 @@ func (*FakePageWorker) Eligible(_ *http.Response) bool {
 	return true
 }
 
-func (*FakePageWorker) Handle(_ *task.Task, _ io.Reader) {}
+func (*FakePageWorker) Handle(_ *task.Task, _ io.Reader, _ *results.Result) {}
 
 func TestSetPageWorker(t *testing.T) {
 	w := &Worker{}
