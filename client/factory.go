@@ -15,6 +15,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/Matir/webborer/logging"
 	"h12.me/socks"
@@ -78,7 +79,12 @@ func (factory *ProxyClientFactory) SetUsernamePassword(username, password string
 func (factory *ProxyClientFactory) Get() Client {
 	if len(factory.proxyURLs) == 0 {
 		return &httpClient{
-			Client:       &http.Client{Timeout: factory.timeout},
+			Client: &http.Client{
+				Timeout: factory.timeout,
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				},
+			},
 			UserAgent:    factory.userAgent,
 			HTTPUsername: factory.httpUsername,
 			HTTPPassword: factory.httpPassword,
