@@ -21,6 +21,7 @@ import (
 	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/results"
 	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/wordlist"
 	"github.com/Matir/webborer/worker"
@@ -91,8 +92,30 @@ func main() {
 	queue.RunInBackground()
 
 	logging.Logf(logging.LogDebug, "Creating expander and filter...")
-	expander := filter.Expander{Wordlist: &words, Adder: queue.GetAddCount()}
-	expander.ProcessWordlist()
+	var expander filter.Expander
+	switch settings.RunMode {
+	case ss.RunModeEnumeration:
+		wlexpander := filter.NewWordlistExpander(words)
+		wlexpander.ProcessWordlist()
+		expander = wlexpander
+	case ss.RunModeDotProduct:
+		dpexpander := filter.NewDotProductExpander(words)
+		expander = dpexpander
+	case ss.RunModeLinkCheck:
+		// No expander needed
+	default:
+		panic("Unknown run mode!")
+	}
+
+	if expander != nil {
+		expander.SetAddCount(queue.GetAddCount())
+	}
+
+	headerExpander := filter.NewHeaderExpander(settings.OptionalHeader.Header())
+	headerExpander.SetAddCount(queue.GetAddCount())
+	extensionExpander := filter.NewExtensionExpander(settings.Extensions)
+	extensionExpander.SetAddCount(queue.GetAddCount())
+
 	filter := filter.NewWorkFilter(settings, queue.GetDoneFunc())
 
 	// Check robots mode
@@ -102,10 +125,16 @@ func main() {
 
 	// filter paths after expansion
 	logging.Debugf("Starting expansion and filtering...")
-	work := filter.RunFilter(expander.Expand(queue.GetWorkChan()))
+	workChan := queue.GetWorkChan()
+	if expander != nil {
+		workChan = expander.Expand(workChan)
+		workChan = headerExpander.Expand(workChan)
+		workChan = extensionExpander.Expand(workChan)
+	}
+	workChan = filter.RunFilter(workChan)
 
 	logging.Logf(logging.LogDebug, "Creating results manager...")
-	rchan := make(chan results.Result, settings.QueueSize)
+	rchan := make(chan *results.Result, settings.QueueSize)
 	resultsManager, err := results.GetResultsManager(settings)
 	if err != nil {
 		logging.Logf(logging.LogFatal, "Unable to start results manager: %s", err.Error())
@@ -113,14 +142,19 @@ func main() {
 	}
 
 	logging.Logf(logging.LogDebug, "Starting %d workers...", settings.Workers)
-	worker.StartWorkers(settings, clientFactory, work, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
+	worker.StartWorkers(settings, clientFactory, workChan, queue.GetAddFunc(), queue.GetDoneFunc(), rchan)
 
 	logging.Logf(logging.LogDebug, "Starting results manager...")
 	resultsManager.Run(rchan)
 
 	// Kick things off with the seed URL
 	logging.Logf(logging.LogDebug, "Adding starting URLs: %v", scope)
-	queue.AddURLs(scope...)
+	task.SetDefaultHeader(settings.Header.Header())
+	tasks := make([]*task.Task, 0, len(scope))
+	for _, s := range scope {
+		tasks = append(tasks, task.NewTaskFromURL(s))
+	}
+	queue.AddTasks(tasks...)
 
 	// Add a progress bar?
 	if settings.ProgressBar {

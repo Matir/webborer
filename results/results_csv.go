@@ -28,7 +28,7 @@ type CSVResultsManager struct {
 	fp     *os.File
 }
 
-func (rm *CSVResultsManager) Run(res <-chan Result) {
+func (rm *CSVResultsManager) Run(res <-chan *Result) {
 	go func() {
 		rm.start()
 		defer func() {
@@ -48,7 +48,7 @@ func (rm *CSVResultsManager) Run(res <-chan Result) {
 	}()
 }
 
-func (rm *CSVResultsManager) runOne(res Result) {
+func (rm *CSVResultsManager) runOne(res *Result) {
 	if !ReportResult(res) {
 		return
 	}

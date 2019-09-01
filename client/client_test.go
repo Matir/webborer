@@ -93,7 +93,7 @@ func (c *mockAuthHttpClient) Do(req *http.Request) (*http.Response, error) {
 func TestMakeRequest_Basic(t *testing.T) {
 	c := &httpClient{}
 	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
-	req := c.makeRequest(u, "GET")
+	req := c.makeRequest(u, "GET", "", nil)
 	if req.URL.String() != u.String() {
 		t.Errorf("URL does not match requested: %s != %s", req.URL.String(), u.String())
 	}

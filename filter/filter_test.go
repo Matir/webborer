@@ -17,14 +17,15 @@ package filter
 import (
 	"github.com/Matir/webborer/client/mock"
 	"github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"net/url"
 	"testing"
 )
 
 func TestFilterDuplicates(t *testing.T) {
-	src := make(chan *url.URL, 5)
+	src := make(chan *task.Task, 5)
 	for _, p := range []string{"/a", "/b", "/a", "/c", "/a"} {
-		src <- &url.URL{Path: p}
+		src <- task.NewTaskFromURL(&url.URL{Path: p})
 	}
 	dupes := 0
 	dupefunc := func(i int) { dupes += i }
@@ -33,8 +34,8 @@ func TestFilterDuplicates(t *testing.T) {
 	out := filter.RunFilter(src)
 	for _, p := range []string{"/a", "/b", "/c"} {
 		if u, ok := <-out; ok {
-			if u.Path != p {
-				t.Errorf("Expected %s, got %s.", p, u.Path)
+			if u.URL.Path != p {
+				t.Errorf("Expected %s, got %s.", p, u.URL.Path)
 			}
 		} else {
 			t.Error("Expected output, channel was closed.")
@@ -49,9 +50,9 @@ func TestFilterDuplicates(t *testing.T) {
 }
 
 func TestFilterExclusion(t *testing.T) {
-	src := make(chan *url.URL, 5)
-	src <- &url.URL{Path: "/a"}
-	src <- &url.URL{Path: "/b"}
+	src := make(chan *task.Task, 5)
+	src <- task.NewTaskFromURL(&url.URL{Path: "/a"})
+	src <- task.NewTaskFromURL(&url.URL{Path: "/b"})
 	dupefunc := func(_ int) {}
 	ss := &settings.ScanSettings{
 		ExcludePaths: []string{
@@ -62,7 +63,7 @@ func TestFilterExclusion(t *testing.T) {
 	close(src)
 	out := filter.RunFilter(src)
 	if u, ok := <-out; ok {
-		if u.Path != "/b" {
+		if u.URL.Path != "/b" {
 			t.Errorf("Expected /b, got %v", u)
 		}
 	} else {

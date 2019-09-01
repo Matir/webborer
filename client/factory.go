@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/Matir/webborer/logging"
-	"h12.me/socks"
+	"h12.io/socks"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -38,7 +38,7 @@ type ClientFactory interface {
 	Get() Client
 }
 
-// ProxyClientFactory uses the h12.me/socks package to support SOCKS proxies
+// ProxyClientFactory uses the h12.io/socks package to support SOCKS proxies
 // when transporting requests to the webserver.
 type ProxyClientFactory struct {
 	proxyURLs    []*url.URL

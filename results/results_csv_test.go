@@ -23,7 +23,7 @@ import (
 
 // Long test to thoroughly test CSV writing.
 func TestWriteCSV(t *testing.T) {
-	rchan := make(chan Result)
+	rchan := make(chan *Result)
 	buf := bytes.Buffer{}
 	mgr := CSVResultsManager{
 		writer: csv.NewWriter(&buf),

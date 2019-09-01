@@ -16,7 +16,9 @@
 package util
 
 import (
+	"fmt"
 	"github.com/Matir/webborer/logging"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -157,4 +159,25 @@ func EnableCPUProfiling() func() {
 		return cancelFunc
 	}
 	return nil
+}
+
+// Does a slice of strings contain a string
+func StringSliceContains(haystack []string, needle string) bool {
+	for _, v := range haystack {
+		if v == needle {
+			return true
+		}
+	}
+	return false
+}
+
+// Turn an http.Header into a string representation
+func StringHeader(header http.Header, sep string) string {
+	pieces := make([]string, 0)
+	for k, vals := range header {
+		for _, v := range vals {
+			pieces = append(pieces, fmt.Sprintf("%s: %s", k, v))
+		}
+	}
+	return strings.Join(pieces, sep)
 }
