@@ -21,6 +21,7 @@ var DefaultWordlist = `
 Admin
 Administration
 CVS
+LICENSE
 Log
 Logs
 Pages
