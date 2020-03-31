@@ -20,10 +20,13 @@ var DefaultWordlist = `
 .htpasswd
 Admin
 Administration
+CHANGELOG
 CVS
+HISTORY
 LICENSE
 Log
 Logs
+NEWS
 Pages
 Servlet
 Servlets
