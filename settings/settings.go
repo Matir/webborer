@@ -102,7 +102,7 @@ var outputFormats []string
 func NewScanSettings() *ScanSettings {
 	settings := &ScanSettings{
 		Threads:        runtime.NumCPU(),
-		Extensions:     []string{"html", "php", "asp", "aspx"},
+		Extensions:     []string{"html", "php", "asp", "aspx", "js", "txt"},
 		Method:         "GET",
 		Mangle:         true,
 		QueueSize:      1024,
