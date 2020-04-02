@@ -95,7 +95,7 @@ func main() {
 	var expander filter.Expander
 	switch settings.RunMode {
 	case ss.RunModeEnumeration:
-		wlexpander := filter.NewWordlistExpander(words)
+		wlexpander := filter.NewWordlistExpander(words, settings.AddSlashes, settings.MangleCases)
 		wlexpander.ProcessWordlist()
 		expander = wlexpander
 	case ss.RunModeDotProduct:

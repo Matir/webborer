@@ -55,7 +55,7 @@ type ScanSettings struct {
 	WordlistPath string
 	// Extensions for mangling
 	Extensions StringSliceFlag
-	// Whether or not to mangle
+	// Whether or not to mangle by adding extensions
 	Mangle bool
 	// How long should internal queues be sized
 	QueueSize int
@@ -87,6 +87,10 @@ type ScanSettings struct {
 	OptionalHeader HeaderFlag
 	// Progress bar
 	ProgressBar bool
+	// Add slashes
+	AddSlashes bool
+	// MangleCases
+	MangleCases bool
 	// Whether or not to do CPU Profiling
 	DebugCPUProf bool
 	// Config file used when loading (for debugging only)
@@ -152,6 +156,8 @@ func (settings *ScanSettings) InitFlags() {
 	flag.StringVar(&settings.WordlistPath, "wordlist", "", "Wordlist `filename` to use (default built-in)")
 	flag.Var(&settings.Extensions, "extensions", "List of `extensions` to mangle with.")
 	flag.BoolVar(&settings.Mangle, "mangle", true, "Mangle by adding extensions.")
+	flag.BoolVar(&settings.MangleCases, "cases", false, "Modify the wordlist with alternate cases.")
+	flag.BoolVar(&settings.AddSlashes, "slashes", false, "Add slashes to paths to check for servers that don't redirect.")
 	flag.Var(&settings.Header, "header", "Headers to send with each request.")
 	flag.Var(&settings.OptionalHeader, "optional-header", "Headers to try sending one at a time.")
 	flag.Var(&settings.Proxies, "proxy", "Proxy or `proxies` to use.")

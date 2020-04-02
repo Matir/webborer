@@ -29,28 +29,56 @@ type WordlistExpander struct {
 	Wordlist []string
 	// Function to count new instances
 	adder workqueue.QueueAddCount
+	// Whether to add slashes
+	addSlashes bool
+	// Whether to mangle cases
+	mangleCases bool
 }
 
-func NewWordlistExpander(Wordlist []string) *WordlistExpander {
+// A WordMangler is responsible for modifying a wordlist entry to produce
+// alternatives.
+type WordMangler func(string) string
+
+var (
+	caseManglers = []WordMangler{
+		strings.ToLower,
+		strings.ToUpper,
+		strings.Title,
+	}
+)
+
+// NewWordlistExpander creates a new Expander for a list
+func NewWordlistExpander(Wordlist []string, addSlashes, mangleCases bool) *WordlistExpander {
 	return &WordlistExpander{
-		Wordlist: Wordlist,
+		Wordlist:    Wordlist,
+		addSlashes:  addSlashes,
+		mangleCases: mangleCases,
 	}
 }
 
 // Update the wordlist to contain directory & non-directory entries
 func (e *WordlistExpander) ProcessWordlist() {
-	newList := make([]string, 0)
-	for _, w := range e.Wordlist {
-		newList = append(newList, w)
-		if strings.Contains(w, ".") {
-			continue
+	newList := e.Wordlist[:]
+	if e.mangleCases {
+		for _, w := range e.Wordlist {
+			for _, mangler := range caseManglers {
+				newList = append(newList, mangler(w))
+			}
 		}
-		if w[len(w)-1] == byte('/') {
-			continue
-		}
-		newList = append(newList, w+"/")
 	}
-	e.Wordlist = newList
+	if e.addSlashes {
+		// Append slashes to create directory entries
+		for _, w := range newList {
+			if strings.Contains(w, ".") {
+				continue
+			}
+			if w[len(w)-1] == byte('/') {
+				continue
+			}
+			newList = append(newList, w+"/")
+		}
+	}
+	e.Wordlist = util.DedupeStrings(newList)
 }
 
 func (e *WordlistExpander) Expand(in <-chan *task.Task) <-chan *task.Task {
