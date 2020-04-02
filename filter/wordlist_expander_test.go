@@ -22,8 +22,8 @@ import (
 
 func TestProcessWordlist(t *testing.T) {
 	wl := []string{"a", "b/", "c.txt"}
-	expected := []string{"a", "a/", "b/", "c.txt"}
-	expander := &WordlistExpander{Wordlist: wl}
+	expected := []string{"a", "b/", "c.txt", "a/"}
+	expander := &WordlistExpander{Wordlist: wl, addSlashes: true}
 	expander.ProcessWordlist()
 	if len(expander.Wordlist) != len(expected) {
 		t.Fatalf("Length of wordlist not expected: %d vs %d", len(expander.Wordlist), len(expected))
