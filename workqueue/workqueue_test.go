@@ -16,21 +16,22 @@ package workqueue
 
 import (
 	"fmt"
+	"github.com/Matir/webborer/task"
 	"net/url"
 	"strconv"
 	"testing"
 )
 
 func TestWorkqueue_Basic(t *testing.T) {
-	filter := func(_ *url.URL) bool { return true }
+	filter := func(_ *task.Task) bool { return true }
 
 	queue := NewWorkQueue(5, nil, false)
 	queue.filter = filter
 	queue.RunInBackground()
 	for i := 0; i < 20; i++ {
 		s := fmt.Sprintf("%d", i)
-		u := &url.URL{Path: s}
-		queue.AddURLs(u)
+		u := task.NewTaskFromURL(&url.URL{Path: s})
+		queue.AddTasks(u)
 	}
 	queue.InputFinished()
 	out := queue.GetWorkChan()
@@ -41,8 +42,8 @@ func TestWorkqueue_Basic(t *testing.T) {
 			t.Errorf("Was expecting %s, got error!", s)
 			break
 		}
-		if o.Path != s {
-			t.Errorf("Out of order responses, got %s, expected %s", o.Path, s)
+		if o.URL.Path != s {
+			t.Errorf("Out of order responses, got %s, expected %s", o.URL.Path, s)
 		}
 		queue.ctr.Done(1)
 	}
@@ -50,15 +51,15 @@ func TestWorkqueue_Basic(t *testing.T) {
 }
 
 func TestWorkqueue_Reject(t *testing.T) {
-	filter := func(_ *url.URL) bool { return false }
+	filter := func(_ *task.Task) bool { return false }
 
 	queue := NewWorkQueue(5, nil, false)
 	queue.filter = filter
 	queue.RunInBackground()
 	for i := 0; i < 20; i++ {
 		s := fmt.Sprintf("%d", i)
-		u := &url.URL{Path: s}
-		queue.AddURLs(u)
+		u := task.NewTaskFromURL(&url.URL{Path: s})
+		queue.AddTasks(u)
 	}
 	queue.InputFinished()
 	out := queue.GetWorkChan()
@@ -75,8 +76,8 @@ func TestWorkqueue_Reject(t *testing.T) {
 
 func TestWorkqueue_PartialReject(t *testing.T) {
 	rounds := 20
-	filter := func(u *url.URL) bool {
-		i, _ := strconv.Atoi(u.Path)
+	filter := func(u *task.Task) bool {
+		i, _ := strconv.Atoi(u.URL.Path)
 		return i < (rounds / 2)
 	}
 
@@ -87,7 +88,7 @@ func TestWorkqueue_PartialReject(t *testing.T) {
 	for i := 0; i < rounds; i++ {
 		s := fmt.Sprintf("%d", i)
 		u := &url.URL{Path: s}
-		queue.GetAddFunc()(u)
+		queue.GetAddFunc()(task.NewTaskFromURL(u))
 	}
 	queue.InputFinished()
 	out := queue.GetWorkChan()
@@ -133,10 +134,10 @@ func TestMakeScopeFunc(t *testing.T) {
 	withoutUpgrade := makeScopeFunc([]*url.URL{baseURL}, false)
 	withUpgrade := makeScopeFunc([]*url.URL{baseURL}, true)
 	for _, res := range results {
-		if withoutUpgrade(res.u) != res.basic {
+		if withoutUpgrade(task.NewTaskFromURL(res.u)) != res.basic {
 			t.Errorf("URL %v did not give expected result: %v", res.u, res.basic)
 		}
-		if withUpgrade(res.u) != res.upgrade {
+		if withUpgrade(task.NewTaskFromURL(res.u)) != res.upgrade {
 			t.Errorf("URL %v did not give expected result with upgrade: %v", res.u, res.upgrade)
 		}
 	}

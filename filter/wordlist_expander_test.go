@@ -15,40 +15,41 @@
 package filter
 
 import (
+	"github.com/Matir/webborer/task"
 	"net/url"
 	"testing"
 )
 
 func TestProcessWordlist(t *testing.T) {
 	wl := []string{"a", "b/", "c.txt"}
-	expected := []string{"a", "a/", "b/", "c.txt"}
-	expander := &Expander{Wordlist: &wl}
+	expected := []string{"a", "b/", "c.txt", "a/"}
+	expander := &WordlistExpander{Wordlist: wl, addSlashes: true}
 	expander.ProcessWordlist()
-	if len(*expander.Wordlist) != len(expected) {
-		t.Fatalf("Length of wordlist not expected: %d vs %d", len(*expander.Wordlist), len(expected))
+	if len(expander.Wordlist) != len(expected) {
+		t.Fatalf("Length of wordlist not expected: %d vs %d", len(expander.Wordlist), len(expected))
 	}
 	for i, e := range expected {
-		if (*expander.Wordlist)[i] != e {
-			t.Errorf("Wordlist element mismatch: %s %s", e, (*expander.Wordlist)[i])
+		if (expander.Wordlist)[i] != e {
+			t.Errorf("Wordlist element mismatch: %s %s", e, (expander.Wordlist)[i])
 		}
 	}
 }
 
 func TestExpand(t *testing.T) {
 	wl := []string{"a", "b"}
-	expander := &Expander{Wordlist: &wl, Adder: func(_ int) {}}
-	ch := make(chan *url.URL, 5)
+	expander := &WordlistExpander{Wordlist: wl, adder: func(_ int) {}}
+	ch := make(chan *task.Task, 5)
 	paths := []string{"/foo", "/bar/"}
 	expected := []string{"/foo", "/foo/a", "/foo/b", "/bar/", "/bar/a", "/bar/b"}
 	for _, p := range paths {
-		ch <- &url.URL{Path: p}
+		ch <- &task.Task{URL: &url.URL{Path: p}}
 	}
 	close(ch)
 	res := expander.Expand(ch)
 	for _, exp := range expected {
 		if item, ok := <-res; ok {
-			if exp != item.Path {
-				t.Errorf("Expected %s, got %s.", exp, item.Path)
+			if exp != item.URL.Path {
+				t.Errorf("Expected %s, got %s.", exp, item.URL.Path)
 			}
 		} else {
 			t.Error("Expected an item, got closed channel!")

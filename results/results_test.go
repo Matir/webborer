@@ -17,21 +17,22 @@ package results
 import (
 	"github.com/Matir/webborer/settings"
 	"net/url"
+	"strings"
 	"testing"
 )
 
-func makeTestResults() []Result {
-	return []Result{
-		Result{
+func makeTestResults() []*Result {
+	return []*Result{
+		&Result{
 			URL:         &url.URL{Scheme: "http", Host: "localhost", Path: "/"},
 			Code:        200,
 			ContentType: "text/html",
 		},
-		Result{
+		&Result{
 			URL:  &url.URL{Scheme: "http", Host: "localhost", Path: "/x"},
 			Code: 404,
 		},
-		Result{
+		&Result{
 			URL:   &url.URL{Scheme: "http", Host: "localhost", Path: "/.git"},
 			Code:  301,
 			Redir: &url.URL{Scheme: "https", Host: "localhost", Path: "/.git"},
@@ -68,7 +69,7 @@ func TestFoundSomething(t *testing.T) {
 }
 
 func TestReportResult(t *testing.T) {
-	r := Result{Code: 200}
+	r := &Result{Code: 200}
 	if !ReportResult(r) {
 		t.Error("Expected to report a result of 200.")
 	}
@@ -79,4 +80,30 @@ func TestBaseFunctions(_ *testing.T) {
 	brm.start()
 	go brm.done()
 	brm.Wait()
+}
+
+func TestResultString(t *testing.T) {
+	for _, r := range makeTestResults() {
+		if !strings.Contains(r.String(), "localhost") {
+			t.Error("Really wrong stringification.")
+		}
+		if !strings.Contains(r.String(), r.URL.String()) {
+			t.Error("String does not contain URL.")
+		}
+	}
+}
+
+func TestResultAddLink(t *testing.T) {
+	r := &Result{}
+	if r.Links != nil {
+		t.Error("Links is not nil!")
+	}
+	u := &url.URL{Scheme: "http", Host: "localhost", Path: "/"}
+	r.AddLink(u, LinkUnknown)
+	if r.Links == nil || len(r.Links) != 1 {
+		t.Error("Links not created properly.")
+	}
+	if _, ok := r.Links[u.String()]; !ok {
+		t.Error("URL not stored in links.")
+	}
 }

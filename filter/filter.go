@@ -22,6 +22,7 @@ import (
 	"github.com/Matir/webborer/logging"
 	"github.com/Matir/webborer/robots"
 	ss "github.com/Matir/webborer/settings"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
 	"net/url"
@@ -53,26 +54,27 @@ func NewWorkFilter(settings *ss.ScanSettings, counter workqueue.QueueDoneFunc) *
 }
 
 // Apply a filter to a channel of URLs.  Runs asynchronously.
-func (f *WorkFilter) RunFilter(src <-chan *url.URL) <-chan *url.URL {
-	c := make(chan *url.URL, f.settings.QueueSize)
+func (f *WorkFilter) RunFilter(src <-chan *task.Task) <-chan *task.Task {
+	c := make(chan *task.Task, f.settings.QueueSize)
 	go func() {
 	taskLoop:
-		for task := range src {
-		  // Fragment is irrelevant for requests to server
-		  task.Fragment = ""
-			taskURL := task.String()
+		for t := range src {
+			// Fragment is irrelevant for requests to server
+			t.URL.Fragment = ""
+			// TODO: make a more efficient ID function?
+			taskURL := t.String()
 			if _, ok := f.done[taskURL]; ok {
-				f.reject(task, "already done")
+				f.reject(t, "already done")
 				continue
 			}
 			f.done[taskURL] = true
 			for _, exclusion := range f.exclusions {
-				if util.URLIsSubpath(exclusion, task) {
-					f.reject(task, "excluded")
+				if util.URLIsSubpath(exclusion, t.URL) {
+					f.reject(t, "excluded")
 					continue taskLoop
 				}
 			}
-			c <- task
+			c <- t
 		}
 		close(c)
 	}()
@@ -103,7 +105,7 @@ func (f *WorkFilter) AddRobotsFilter(scope []*url.URL, clientFactory client.Clie
 }
 
 // Task that can't be used, but should be counted as terminated.
-func (f *WorkFilter) reject(u *url.URL, reason string) {
+func (f *WorkFilter) reject(u *task.Task, reason string) {
 	logging.Logf(logging.LogDebug, "Filter rejected %s: %s.", u.String(), reason)
 	f.counter(1)
 }

@@ -16,6 +16,8 @@ package worker
 
 import (
 	"github.com/Matir/webborer/logging"
+	"github.com/Matir/webborer/results"
+	"github.com/Matir/webborer/task"
 	"github.com/Matir/webborer/util"
 	"github.com/Matir/webborer/workqueue"
 	"golang.org/x/net/html"
@@ -39,9 +41,10 @@ func NewHTMLWorker(adder workqueue.QueueAddFunc) *HTMLWorker {
 }
 
 // Work on this response
-func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
+func (w *HTMLWorker) Handle(t *task.Task, body io.Reader, result *results.Result) {
 	limitedBody := io.LimitReader(body, maxHTMLWorkerSize)
 	links := w.GetLinks(limitedBody)
+	logging.Logf(logging.LogInfo, "Found %d links for %s", len(links), t.URL.String())
 	foundURLs := make([]*url.URL, 0, len(links))
 	for _, l := range links {
 		u, err := url.Parse(l)
@@ -50,18 +53,26 @@ func (w *HTMLWorker) Handle(URL *url.URL, body io.Reader) {
 			continue
 		}
 		// TODO: use <base> tag
-		resolved := URL.ResolveReference(u)
+		resolved := t.URL.ResolveReference(u)
+		result.AddLink(resolved, results.LinkUnknown)
 		foundURLs = append(foundURLs, resolved)
 		// Include parents of the found URL.
 		// Worker will remove duplicates
 		foundURLs = append(foundURLs, util.GetParentPaths(resolved)...)
 	}
-	w.adder(foundURLs...)
+	newTasks := make([]*task.Task, 0, len(foundURLs))
+	for _, u := range foundURLs {
+		t := t.Copy()
+		t.URL = u
+		newTasks = append(newTasks, t)
+	}
+	w.adder(newTasks...)
 }
 
 // Check if this response can be handled by this worker
 func (*HTMLWorker) Eligible(resp *http.Response) bool {
 	ct := resp.Header.Get("Content-type")
+	logging.Logf(logging.LogInfo, "Content type: %s", ct)
 	if strings.ToLower(ct) != "text/html" {
 		return false
 	}

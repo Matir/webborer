@@ -27,7 +27,7 @@ func TestPlainResultsManager_Basic(t *testing.T) {
 		writer: &buf,
 		redirs: true,
 	}
-	rchan := make(chan Result)
+	rchan := make(chan *Result)
 	mgr.Run(rchan)
 	for _, r := range makeTestResults() {
 		rchan <- r

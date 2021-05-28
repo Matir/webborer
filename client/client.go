@@ -28,6 +28,7 @@ import (
 // support our use case.
 type Client interface {
 	RequestURL(*url.URL) (*http.Response, error)
+	Request(*url.URL, string, string, http.Header) (*http.Response, error)
 	SetCheckRedirect(func(*http.Request, []*http.Request) error)
 }
 
@@ -51,9 +52,15 @@ type httpClient struct {
 //
 // Handles HTTP Authentication & Custom Headers
 func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
-	// TODO: support other methods
-	method := "GET"
-	req := c.makeRequest(u, method)
+	logging.Infof("Deprectated function RequestURL is called.")
+	return c.Request(u, "", "GET", nil)
+}
+
+// Request the URL given with optional overrides.
+//
+// Handles HTTP Authentication & Custom Headers
+func (c *httpClient) Request(u *url.URL, host, method string, header http.Header) (*http.Response, error) {
+	req := c.makeRequest(u, method, host, header)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return resp, err
@@ -69,7 +76,7 @@ func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
 		if c.HTTPUsername == "" && c.HTTPPassword == "" {
 			return resp, nil
 		}
-		req = c.makeRequest(u, method)
+		req = c.makeRequest(u, method, host, header)
 		err = c.addAuthHeader(req, authHeader)
 		if err != nil {
 			logging.Logf(logging.LogInfo, err.Error())
@@ -84,9 +91,15 @@ func (c *httpClient) RequestURL(u *url.URL) (*http.Response, error) {
 }
 
 // Build a request with our preferred options
-func (c *httpClient) makeRequest(u *url.URL, method string) *http.Request {
+func (c *httpClient) makeRequest(u *url.URL, method, host string, header http.Header) *http.Request {
 	req, _ := http.NewRequest(method, u.String(), nil)
-	req.Header.Set("User-Agent", c.UserAgent)
+	req.Host = host
+	if header != nil {
+		req.Header = header
+	}
+	if _, ok := req.Header["User-Agent"]; !ok {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
 	return req
 }
 

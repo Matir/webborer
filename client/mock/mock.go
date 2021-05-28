@@ -30,6 +30,7 @@ type MockClientFactory struct {
 	ForeverClient *MockClient
 	NextClient    *MockClient
 }
+
 type MockClient struct {
 	ForeverResponse *http.Response
 	NextResponse    *http.Response
@@ -51,6 +52,10 @@ func (f *MockClientFactory) Get() client.Client {
 }
 
 func (c *MockClient) RequestURL(u *url.URL) (*http.Response, error) {
+	return c.Request(u, "", "GET", nil)
+}
+
+func (c *MockClient) Request(u *url.URL, host, method string, header http.Header) (*http.Response, error) {
 	c.Requests = append(c.Requests, u)
 	if c.Redir != nil && c.CheckRedirect != nil {
 		req := &http.Request{URL: c.Redir}
